@@ -1,8 +1,19 @@
-from ij import IJ
+from ij import IJ, WindowManager
 from ij.measure import ResultsTable
+from ij.plugin import Macro_Runner
 
-def run3Dmeasurements():
+def run3Dmeasurements(segmentedImage, rawImage):
+	segmented = segmentedImage.getTitle()
+	raw = rawImage.getTitle()
+	segmentedImage.show()
+	rawImage.show()
+	runner = Macro_Runner()
+	runner.runMacroFile("/Users/u0078517/src/ImageProcessing/nuclearP/ProcessObjects.ijm",
+		"segmented='" + segmented + "' raw='" + raw + "'")
+	segmentedImage.hide()
+	rawImage.hide()
 	
+	return get3Dmeasurements(raw + "_objects", raw + "_measurements", rawImage.getNChannels())
 
 def get3Dmeasurements(objectsTable, measurementTable, channels):
 
