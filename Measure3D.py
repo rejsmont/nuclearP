@@ -3,10 +3,10 @@ from ij.measure import ResultsTable
 from ij.plugin import Macro_Runner
 
 def run3Dmeasurements(segmentedImage, rawImage):
-	#segmented = segmentedImage.getTitle()
-	#raw = rawImage.getTitle()
-	#segmentedImage.show()
-	#rawImage.show()
+	segmented = segmentedImage.getTitle()
+	raw = rawImage.getTitle()
+	segmentedImage.show()
+	rawImage.show()
 	runner = Macro_Runner()
 	runner.runMacroFile("/Users/u0078517/src/ImageProcessing/nuclearP/Manager3D.ijm",
 		"segmented='" + segmented + "' raw='" + raw + "'")
