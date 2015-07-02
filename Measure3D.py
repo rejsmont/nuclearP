@@ -76,14 +76,4 @@ def getResultsTable(objects, original, options):
 			results.addValue("Integral " + "%i" % channel,  measurements['int'])
 			results.addValue("Mean " + "%i" % channel, measurements['mean'])
 
-	title = original.getTitle()
-	title = title[:title.rfind('.')]
-	outputName =  "OBJ_" + title
-
-	if not os.path.exists(options['outputDir'] + "Results/"):
-		os.makedirs(options['outputDir'] + "Results/")
-
-	results.save(options['outputDir'] + "Results/" + outputName + ".csv")
-	print "Saved " + options['outputDir'] + "Results/" + outputName + ".csv"
-
 	return results

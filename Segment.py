@@ -6,12 +6,8 @@ from ij.plugin import Duplicator
 from trainableSegmentation import WekaSegmentation
 
 
-def getProbabilityMap(image, original, segmentator, index, options):		
+def getProbabilityMap(image, segmentator, options):		
 
-	title = original.getTitle()
-	title = title[:title.rfind('.')]
-	inputName = "C" + "%i" % options['channel'] + "-" + title
-	
 	if segmentator == None:
 		segmentator = WekaSegmentation(image)
 		segmentator.loadClassifier(options['modelFile'])
@@ -36,30 +32,15 @@ def getProbabilityMap(image, original, segmentator, index, options):
 			index = pmLabels.index(label)
 			pmStacks[index].addSlice(pMap.getProcessor())
 
-	if not os.path.exists(options['outputDir'] + "Maps/"):
-		os.makedirs(options['outputDir'] + "Maps/")
-
+	probabilityMaps = []
 	for pmcIndex, pmcStack in enumerate(pmStacks):
-		pmImage = ImagePlus("PM" + "%i" % pmcIndex + "_" + inputName , pmcStack)
-		saver = FileSaver(pmImage)
-		saver.saveAsTiffStack(options['outputDir'] + "Maps/PM" + "%i" % pmcIndex + "_" + inputName + ".tif")
-		print "Saved " + options['outputDir'] + "Maps/PM" + "%i" % pmcIndex + "_" + inputName + ".tif"
-
-		if pmcIndex == index:
-			probabilityMap = pmImage		
-		pmImage.close()
-
+		probabilityMaps.append(ImagePlus("PM" + "%i" % pmcIndex + "_" + image.getTitle(), pmcStack))
 	pMap.close()
 
-	return probabilityMap
+	return probabilityMaps
 
 
-def segmentImage(probabilityMap, seedImage, original, options):
-
-	title = original.getTitle()
-	title = title[:title.rfind('.')]
-	inputName = "C" + "%i" % options['channel'] + "-" + title
-	outputName =  "OM_" + title
+def segmentImage(probabilityMap, seedImage, options):
 
 	if probabilityMap != None:
 		duplicator = Duplicator()
@@ -100,7 +81,7 @@ def segmentImage(probabilityMap, seedImage, original, options):
 
 	IJ.selectWindow("seg")
 	segmentedImage = IJ.getImage()
-	segmentedImage.setTitle(outputName)
+	segmentedImage.setTitle("OM_" + probabilityMap.getTitle())
 	segmentedImage.hide()
 
 	if image != None:
@@ -109,13 +90,5 @@ def segmentImage(probabilityMap, seedImage, original, options):
 	if seed != None:
 		image.seed = False
 		seed.close()
-
-	if not os.path.exists(options['outputDir'] + "Segmented/"):
-		os.makedirs(options['outputDir'] + "Segmented/")
-
-	saver = FileSaver(segmentedImage)
-	saver.saveAsTiffStack(options['outputDir'] + "Segmented/" + outputName + ".tif")
-	
-	print "Saved " + options['outputDir'] + "Segmented/" + outputName + ".tif"
 
 	return segmentedImage
