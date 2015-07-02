@@ -1,3 +1,5 @@
+import os
+
 from ij import IJ, WindowManager
 from ij.measure import ResultsTable
 from ij.plugin import Macro_Runner
@@ -56,3 +58,32 @@ def get3Dmeasurements(objectsTable, measurementTable, channels):
 		results_table.getResultsWindow().close(False)
 
 	return objects
+
+def getResultsTable(objects, original, options):
+
+	results = ResultsTable()
+	results.showRowNumbers(False)
+	
+	for index, particle in enumerate(objects):
+		results.incrementCounter()
+		results.addValue("Particle", index + 1)
+		results.addValue("cx", particle['cx'])
+		results.addValue("cy", particle['cy'])
+		results.addValue("cz", particle['cx'])
+		results.addValue("Volume", particle['vol'])
+
+		for channel, measurements in enumerate(particle['measurements']):
+			results.addValue("Integral " + "%i" % channel,  measurements['int'])
+			results.addValue("Mean " + "%i" % channel, measurements['mean'])
+
+	title = original.getTitle()
+	title = title[:title.rfind('.')]
+	outputName =  "OBJ_" + title
+
+	if not os.path.exists(options['outputDir'] + "Results/"):
+		os.makedirs(options['outputDir'] + "Results/")
+
+	results.save(options['outputDir'] + "Results/" + outputName + ".csv")
+	print "Saved " + options['outputDir'] + "Results/" + outputName + ".csv"
+
+	return results
