@@ -6,8 +6,8 @@ sys.path.append("/Users/u0078517/src/ImageProcessing/nuclearP")
 ### These imports are required in development environment
 import Options
 reload(Options)
-import Deconvolve
-reload(Deconvolve)
+import Decolvolution
+reload(Decolvolution)
 import Segment
 reload(Segment)
 import Measure3D
@@ -17,7 +17,7 @@ reload(Measure3D)
 from ij import IJ
 from ij.io import DirectoryChooser, OpenDialog, FileSaver
 from Options import getOptions, getDefaults
-from Deconvolve import deconvolveImage
+from Decolvolution import Decolvolution
 from Segment import getProbabilityMap, segmentImage
 from Measure3D import run3Dmeasurements, getResultsTable
 
@@ -41,6 +41,7 @@ print "Model file: " + options['modelFile']
 
 ### Initiate segmentator
 segmentator = None
+deconvolutor = None
 
 ### Create required directories
 if not os.path.exists(outputDir + "Deconvolved/"):
@@ -51,9 +52,6 @@ if not os.path.exists(outputDir + "Segmented/"):
 	os.makedirs(outputDir + "Segmented/")
 if not os.path.exists(outputDir + "Results/"):
 	os.makedirs(outputDir + "Results/")
-
-### Load PSF
-psf = IJ.openImage(psfFile)
 
 ### Loop through input images
 for imageFile in os.listdir(inputDir):
@@ -66,9 +64,17 @@ for imageFile in os.listdir(inputDir):
 	title = title[:title.rfind('.')]
 	inputName = "C" + "%i" % options['channel'] + "-" + title
 
+	### Extract channel used for segmentation
+	splitter = ChannelSplitter()
+	channelStack = splitter.getChannel(image, options['channel'])
+	inputImage = ImagePlus("C" + "%i" % options['channel'] + "-" + image.getTitle() , channelStack)
+
 	### Deconvolution
 	print "Deconvolving image..."
-	deconvolvedImage = deconvolveImage(image, psf, options)
+	if deconvolutor = None:
+		psf = IJ.openImage(psfFile)
+		deconvolutor = Deconvolution(psf, options)
+	deconvolvedImage = deconvolutor.process(inputImage)
 	outputName =  "TM_" + "%f" % options['regparam'] + "_" + inputName
 	saver = FileSaver(deconvolvedImage)
 	saver.saveAsTiffStack(outputDir + "Deconvolved/" + outputName + ".tif")	
@@ -104,5 +110,4 @@ for imageFile in os.listdir(inputDir):
 
 	### This should be it!
 	print "Image " + imageFile + " processed!"
-	
-psf.close()
+
