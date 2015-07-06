@@ -6,48 +6,60 @@ sys.path.append("/Users/u0078517/src/ImageProcessing/nuclearP")
 ### These imports are required in development environment
 import Options
 reload(Options)
-import Decolvolution
-reload(Decolvolution)
+import Deconvolution
+reload(Deconvolution)
+import Classification
+reload(Classification)
 import Segment
 reload(Segment)
 import Measure3D
 reload(Measure3D)
 
 ### Regular imports
-from ij import IJ
+from ij import IJ, ImagePlus
 from ij.io import DirectoryChooser, OpenDialog, FileSaver
+from ij.plugin import ChannelSplitter
 from Options import getOptions, getDefaults
-from Decolvolution import Decolvolution
+from Deconvolution import Deconvolutor
+from Classification import Classificator
 from Segment import getProbabilityMap, segmentImage
 from Measure3D import run3Dmeasurements, getResultsTable
 
 ### Get input dir / output dir / model file from user
 
-inputDialog = DirectoryChooser("Please select a directory contaning your images")
-outputDialog = DirectoryChooser("Please select a directory to save your results")
-psfDialog = OpenDialog("Please select the psf image")
-modelDialog = OpenDialog("Please select the model file")
-
-inputDir = inputDialog.getDirectory()
-outputDir = outputDialog.getDirectory()
-psfFile = psfDialog.getPath()
+#inputDialog = DirectoryChooser("Please select a directory contaning your images")
+#outputDialog = DirectoryChooser("Please select a directory to save your results")
+#psfDialog = OpenDialog("Please select the psf image")
+#modelDialog = OpenDialog("Please select the model file")
+#inputDir = inputDialog.getDirectory()
+#outputDir = outputDialog.getDirectory()
+#psfFile = psfDialog.getPath()
 options = getDefaults()
-options['modelFile'] = modelDialog.getPath()
+#options['modelFile'] = modelDialog.getPath()
 
-print "Input Directory: " + inputDir
-print "Output Directory: " + outputDir
+
+### Hard-coded options for testing
+inputDir = "/Users/u0078517/Desktop/Samples/"
+outputDir = "/Users/u0078517/Desktop/Output/"
+psfFile = "/Users/u0078517/Desktop/Parameters/PSF-Venus-test.tif"
+modelFile = "/Users/u0078517/Desktop/Parameters/classifier.model"
+options['modelFile'] = modelFile
+options['channel'] = 0
+options['regparam'] = 0.01
+options['iterations'] = 50
+
+options['inputDir'] = inputDir
+options['outputDir'] = outputDir
+
+print "Input Directory: " + options['inputDir']
+print "Output Directory: " + options['outputDir']
 print "PSF file: " + psfFile
 print "Model file: " + options['modelFile']
 
 ### Initiate segmentator
-segmentator = None
 deconvolutor = None
+classificator = None
 
-### Create required directories
-if not os.path.exists(outputDir + "Deconvolved/"):
-	os.makedirs(outputDir + "Deconvolved/")
-if not os.path.exists(outputDir + "Maps/"):
-	os.makedirs(outputDir + "Maps/")
 if not os.path.exists(outputDir + "Segmented/"):
 	os.makedirs(outputDir + "Segmented/")
 if not os.path.exists(outputDir + "Results/"):
@@ -71,23 +83,21 @@ for imageFile in os.listdir(inputDir):
 
 	### Deconvolution
 	print "Deconvolving image..."
-	if deconvolutor = None:
+	if deconvolutor == None:
 		psf = IJ.openImage(psfFile)
-		deconvolutor = Deconvolution(psf, options)
+		deconvolutor = Deconvolutor(psf, options, "Deconvolved")
 	deconvolvedImage = deconvolutor.process(inputImage)
 	outputName =  "TM_" + "%f" % options['regparam'] + "_" + inputName
-	saver = FileSaver(deconvolvedImage)
-	saver.saveAsTiffStack(outputDir + "Deconvolved/" + outputName + ".tif")	
-	print "Saved " + outputDir + "Deconvolved/" + outputName + ".tif"
+	deconvolutor.save(deconvolvedImage, outputName)
 
-	### Probability map calculation
-	print "Calculating probability maps..."
-	probabilityMaps = getProbabilityMap(deconvolvedImage, segmentator, options)
+	### Classification
+	print "Classifying image..."
+	if classificator == None:
+		classificator = Classificator(options, "Maps")
+	probabilityMaps = classificator.process(deconvolvedImage)
 	for pmIndex, pmImage in enumerate(probabilityMaps):
 		outputName =  "PM" + "%i" % pmIndex + "_" + inputName
-		saver = FileSaver(pmImage)
-		saver.saveAsTiffStack(outputDir + "Maps/" + outputName + ".tif")	
-		print "Saved " + outputDir + "Maps/" + outputName + ".tif"
+		classificator.save(pmImage, outputName)
 
 	### Blur nuclei probability map (1) to smoothen segmentation
 	IJ.run(probabilityMaps[1], "Gaussian Blur 3D...", "x=2 y=2 z=1");

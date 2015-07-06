@@ -1,15 +1,18 @@
-from ij import IJ, ImagePlus, WindowManager
-from ij.plugin import ChannelSplitter
+import ImageProcessing
+reload(ImageProcessing)
+
+from ImageProcessing import ImageProcessor
 from deconv import Parameters
 from deconv.algo import TikhonovMiller
 from toolbox import Signal, ToolboxSignal
 from java.awt import Rectangle
 from jarray import zeros
 
-class Deconvolution:
+class Deconvolutor(ImageProcessor):
 
 	### Class constructor
-	def __init__(self, psf, options):
+	def __init__(self, psf, options, directory = ""):
+		super(Deconvolutor, self).__init__(options, directory)
 		self.psf = psf
 		self.parameters = Parameters()
 		self.parameters.useFFTW = True
@@ -37,7 +40,6 @@ class Deconvolution:
 	def __getY(self, image):
 		roi = Rectangle(0,0, image.getWidth(), image.getHeight());
 		slices = image.getStackSize();
-		
 		if slices != 1:
 			y = Signal(image, roi, 0, slices)
 		else:
