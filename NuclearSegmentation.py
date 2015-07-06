@@ -10,8 +10,8 @@ import Deconvolution
 reload(Deconvolution)
 import Classification
 reload(Classification)
-import Segment
-reload(Segment)
+import Segmentation
+reload(Segmentation)
 import Measure3D
 reload(Measure3D)
 
@@ -22,6 +22,7 @@ from ij.plugin import ChannelSplitter
 from Options import getOptions, getDefaults
 from Deconvolution import Deconvolutor
 from Classification import Classificator
+from Segmentation import Segmentator
 from Segment import getProbabilityMap, segmentImage
 from Measure3D import run3Dmeasurements, getResultsTable
 
@@ -59,6 +60,7 @@ print "Model file: " + options['modelFile']
 ### Initiate segmentator
 deconvolutor = None
 classificator = None
+segmentator = None
 
 if not os.path.exists(outputDir + "Segmented/"):
 	os.makedirs(outputDir + "Segmented/")
@@ -104,11 +106,11 @@ for imageFile in os.listdir(inputDir):
 
 	### Segment image using nuclear probability map (1)
 	print "Segmenting image..."
-	segmentedImage = segmentImage(probabilityMaps[1], None, options)
+	if segmentator == None:
+		segmentator = Segmentator(options, "Segmented")
+	segmentedImage = segmentator.process(probabilityMaps[1])
 	outputName =  "OM_" + inputName
-	saver = FileSaver(segmentedImage)
-	saver.saveAsTiffStack(outputDir + "Segmented/" + outputName + ".tif")
-	print "Saved " + outputDir + "Segmented/" + outputName + ".tif"
+	segmentator.save(segmentedImage, outputName)
 
 	### Get object measurements
 	print "Measuring objects..."

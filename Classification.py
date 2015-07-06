@@ -10,18 +10,18 @@ class Classificator(ImageProcessor):
 	### Class constructor
 	def __init__(self, options, directory = ""):
 		super(Classificator, self).__init__(options, directory)
-		self.segmentator = None
+		self.algorithm = None
 		self.modelFile = options['modelFile']
 
 	### Perform classification
 	def process(self, image):
-		if self.segmentator == None:
-			self.segmentator = WekaSegmentation(image)
-			self.segmentator.loadClassifier(self.modelFile)
+		if self.algorithm == None:
+			self.algorithm = WekaSegmentation(image)
+			self.algorithm.loadClassifier(self.modelFile)
 		else:
-			self.segmentator.loadNewImage(image)
-		self.segmentator.applyClassifier(True)
-		pmaps = self.segmentator.getClassifiedImage()
+			self.algorithm.loadNewImage(image)
+		self.algorithm.applyClassifier(True)
+		pmaps = self.algorithm.getClassifiedImage()
 		stacks = self.__splitMaps(pmaps)
 
 		probabilityMaps = []
@@ -37,7 +37,7 @@ class Classificator(ImageProcessor):
 		stacks = []
 		for pmslice in range(1, pmstack.getSize() + 1):
 			pmaps.setPosition(pmslice)
-			label = stack.getSliceLabel(pmslice)
+			label = pmstack.getSliceLabel(pmslice)
 			if not label in labels:
 				labels.append(label)
 				stack = ImageStack(pmaps.getWidth(), pmaps.getHeight())
