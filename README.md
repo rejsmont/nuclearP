@@ -4,5 +4,5 @@ and fluorescence intensity measurements in Drosophila eye discs. It uses Deconvo
 Tikhonov-Mueller deconvolution, WEKA for machine learning-based probability map calculation and
 3D ImageJ Suite for final segmentation and 3D object management.
 
-The macros are implemented in Jython and ImageJ macro language.
+The macros are implemented in Jython and use Java APIs of plugins.
 
