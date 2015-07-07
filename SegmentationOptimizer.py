@@ -148,3 +148,4 @@ for imageFile in os.listdir(inputDir):
 					runSimulation(options, image, probabilityMap, results)
 
 	results.show("Optimisation results")
+	results.save(options['outputDir'] + OptimizationResults + ".csv")
