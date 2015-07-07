@@ -12,8 +12,8 @@ import Classification
 reload(Classification)
 import Segmentation
 reload(Segmentation)
-import Measure3D
-reload(Measure3D)
+import Analysis
+reload(Analysis)
 
 ### Regular imports
 from ij import IJ, ImagePlus
@@ -23,6 +23,7 @@ from Options import getOptions, getDefaults
 from Deconvolution import Deconvolutor
 from Classification import Classificator
 from Segmentation import Segmentator
+from Analysis import Analyzer
 from Segment import getProbabilityMap, segmentImage
 from Measure3D import run3Dmeasurements, getResultsTable
 
@@ -61,11 +62,6 @@ print "Model file: " + options['modelFile']
 deconvolutor = None
 classificator = None
 segmentator = None
-
-if not os.path.exists(outputDir + "Segmented/"):
-	os.makedirs(outputDir + "Segmented/")
-if not os.path.exists(outputDir + "Results/"):
-	os.makedirs(outputDir + "Results/")
 
 ### Loop through input images
 for imageFile in os.listdir(inputDir):
@@ -114,11 +110,10 @@ for imageFile in os.listdir(inputDir):
 
 	### Get object measurements
 	print "Measuring objects..."
-	measurements = run3Dmeasurements(segmentedImage, image)
-	results = getResultsTable(measurements, image, options)
+	analyzer = Analyzer(options, segmentator.objects, "Results")
+	results = analyzer.getMeasurements(image)
 	outputName =  "OBJ_" + title
-	results.save(outputDir + "Results/" + outputName + ".csv")
-	print "Saved " + outputDir + "Results/" + outputName + ".csv"
+	analyzer.save(results, outputName)
 
 	### This should be it!
 	print "Image " + imageFile + " processed!"

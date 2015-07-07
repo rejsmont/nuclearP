@@ -4,7 +4,6 @@ reload(ImageProcessing)
 from ImageProcessing import ImageProcessor
 from ij import IJ, ImagePlus
 from ij.plugin import Duplicator
-from ij.process import ImageConverter
 from mcib3d.image3d import ImageHandler
 from mcib3d.image3d import Segment3DSpots
 from mcib3d.image3d.processing import FastFilters3D
@@ -20,9 +19,13 @@ class Segmentator(ImageProcessor):
 		self.watershed = options['watershed']
 		self.volumeMin = options['volumeMin']
 		self.volumeMax = options['volumeMax']
+		self.objects = None
+		self.labelImage = None
 
 	### Perform segmentation
 	def process(self, image, seeds = None):
+		self.objects = None
+		self.labelImage = None
 		duplicator = Duplicator()
 		spots = duplicator.run(image)
 		IJ.setMinAndMax(spots, 0, 1)
@@ -43,9 +46,10 @@ class Segmentator(ImageProcessor):
 		algorithm.setMethodLocal(Segment3DSpots.LOCAL_CONSTANT)
 		algorithm.setMethodSeg(Segment3DSpots.SEG_MAX)
 		algorithm.segmentAll()
-		omap = ImagePlus("OM_" + spots.getTitle(), algorithm.getLabelImage().getImageStack())
+		self.objects = algorithm.getObjects();
+		self.labelImage = ImagePlus("OM_" + spots.getTitle(), algorithm.getLabelImage().getImageStack())
 		
-		return omap
+		return self.labelImage
 
 	### Compute watershed seeds
 	def __computeSeeds(self, spots):

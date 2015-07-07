@@ -13,7 +13,7 @@ class ImageProcessor(object):
 				os.makedirs(self.outputDir + directory)
 		self.subDir = directory
 
-	### Save image to outputDir
+	### Save results to outputDir
 	def save(self, image, outputName):
 		saver = FileSaver(image)
 		saver.saveAsTiffStack(self.outputDir + self.subDir + outputName + ".tif")	
