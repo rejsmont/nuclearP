@@ -24,8 +24,6 @@ from Deconvolution import Deconvolutor
 from Classification import Classificator
 from Segmentation import Segmentator
 from Analysis import Analyzer
-from Segment import getProbabilityMap, segmentImage
-from Measure3D import run3Dmeasurements, getResultsTable
 
 ### Get input dir / output dir / model file from user
 
