@@ -6,12 +6,10 @@ sys.path.append("/Users/u0078517/src/ImageProcessing/nuclearP")
 ### These are required in development environment
 import Options
 reload(Options)
-import Deconvolve
-reload(Deconvolve)
-import Segment
-reload(Segment)
-import Measure3D
-reload(Measure3D)
+import Segmentation
+reload(Segmentation)
+import Analysis
+reload(Analysis)
 
 ### Regular imports
 from ij import IJ
@@ -19,22 +17,25 @@ from ij.io import DirectoryChooser, OpenDialog, FileSaver
 from ij.measure import ResultsTable
 from ij.plugin import Duplicator
 from Options import getOptions, getDefaults
-from Deconvolve import deconvolveImage
-from Segment import getProbabilityMap, segmentImage
-from Measure3D import run3Dmeasurements, getResultsTable
+from Segmentation import Segmentator
+from Analysis import Analyzer
 
 
-def runSimulation(gaussXY, gaussZ, image, probabilityMap, results):
-
+def runSimulation(options, image, probabilityMap, results):
+	
 	print "Testing segmentation with blur" + \
-					" x=" + "%f" % gaussXY + \
-					" y=" + "%f" % gaussXY + \
-					" z=" + "%f" % gaussZ
+					" x=" + "%f" % options['gaussXY'] + \
+					" y=" + "%f" % options['gaussXY'] + \
+					" z=" + "%f" % options['gaussZ'] + \
+					" localBackground="  + "%i" % options['localBackground'] + \
+					" seedRadius="  + "%i" % options['seedRadius']
 
 	results.incrementCounter()
-	results.addValue("GX", gaussXY)
-	results.addValue("GY", gaussXY)
-	results.addValue("GZ", gaussZ)
+	results.addValue("Threshold", options['localBackground'])
+	results.addValue("Seed radius", options['seedRadius'])
+	results.addValue("GX", options['gaussXY'])
+	results.addValue("GY", options['gaussXY'])
+	results.addValue("GZ", options['gaussZ'])
 
 	duplicator = Duplicator()
 	inputPM = duplicator.run(probabilityMap)
@@ -42,26 +43,27 @@ def runSimulation(gaussXY, gaussZ, image, probabilityMap, results):
 	
 	### Blur nuclei probability map to smoothen segmentation
 	IJ.run(inputPM, "Gaussian Blur 3D...",
-		" x=" + "%f" % gaussXY + \
-		" y=" + "%f" % gaussXY + \
-		" z=" + "%f" % gaussZ);
+		" x=" + "%f" % options['gaussXY'] + \
+		" y=" + "%f" % options['gaussXY'] + \
+		" z=" + "%f" % options['gaussZ'])
 
 	### Segment image using nuclear probability map
 	print ">>> Segmenting image..."
-	segmentedImage = segmentImage(inputPM, None, options)
-	outputName =  "OMG_XY" + "%f" % gaussXY + "_Z" + "%f" % gaussZ + "_" + inputName
-	saver = FileSaver(segmentedImage)
-	saver.saveAsTiffStack(outputDir + "Segmented/" + outputName + ".tif")
-	print ">>> Saved " + outputDir + "Segmented/" + outputName + ".tif"
+	segmentator = Segmentator(options, "Segmented")
+	segmentedImage = segmentator.process(inputPM)
+	outputName = "OMG_XY" + ("%f" % options['gaussXY']) + "_Z" + ("%f" % options['gaussZ']) + \
+		"_TH" + ("%i" % options['localBackground']) + \
+		"_SR" + ("%i" % options['seedRadius']) + \
+		"_" + inputName
+	segmentator.save(segmentedImage, outputName)
 
 	### Get object measurements
 	print ">>> Measuring objects..."
-	objects = run3Dmeasurements(segmentedImage, image)
 	ranges = [0, 0, 0, 0, 0]
-	
-	for index, particle in enumerate(objects):
+	analyzer = Analyzer(options, segmentator.objects, "Results")
+	for objectV in analyzer.objects.getObjectsList():
 		ranges[0] = ranges[0] + 1
-		volume = particle['vol']
+		volume = objectV.getVolumePixels()
 		if volume <= 500:
 			ranges[1] = ranges[1] + 1
 		elif volume > 500 and volume <= 1000:
@@ -85,19 +87,13 @@ psfFile = "/Users/u0078517/Desktop/Parameters/PSF-Venus-test.tif"
 modelFile = "/Users/u0078517/Desktop/Parameters/classifier.model"
 
 options = getDefaults()
+options['inputDir'] = inputDir
+options['outputDir'] = outputDir
 options['modelFile'] = modelFile
 
 options['channel'] = 0
 options['regparam'] = 0.01
 options['iterations'] = 50
-
-
-### Initiate segmentator
-segmentator = None
-
-### Create required directories
-if not os.path.exists(outputDir + "Segmented/"):
-	os.makedirs(outputDir + "Segmented/")
 
 ### Loop through input images
 for imageFile in os.listdir(inputDir):
@@ -111,10 +107,16 @@ for imageFile in os.listdir(inputDir):
 	inputName = "C" + "%i" % options['channel'] + "-" + title
 
 	### Open probability map
-	print "Opening PM " + outputDir + "Maps/PM1_" + inputName + ".tif"
-	probabilityMap = IJ.openImage(outputDir + "Maps/PM1_" + inputName + ".tif")
+	print "Opening PM " + options['outputDir'] + "Maps/PM1_" + inputName + ".tif"
+	probabilityMap = IJ.openImage(options['outputDir'] + "Maps/PM1_" + inputName + ".tif")
 
 	### Setup simulation parameters
+	thresholdMin = 12288
+	thresholdMax = 16384
+	thresholdStep = 4096
+	seedMin = 2
+	seedMax = 4
+	seedStep = 2
 	gaussXYmin = 0
 	gaussZmin = 0
 	gaussXYmax = 3
@@ -127,12 +129,22 @@ for imageFile in os.listdir(inputDir):
 	results.showRowNumbers(False)
 	
 	### The Simulation loop
-	for gaussXY in range(gaussXYmin, gaussXYmax * divider, gaussXYstep * divider):
-		if gaussXY > 0:
-			for gaussZ in range (gaussZmin, gaussXY + gaussXY / gaussZsteps, gaussXY / gaussZsteps):
-				runSimulation(gaussXY / divider, gaussZ / divider, image, probabilityMap, results)
-		else:
-			gaussZ = gaussXY
-			runSimulation(gaussXY / divider, gaussZ / divider, image, probabilityMap, results)
+	for threshold in range(thresholdMin, thresholdMax, thresholdStep):
+		for seed in range(seedMin, seedMax, seedStep):
+			for gaussXY in range(gaussXYmin, gaussXYmax * divider, gaussXYstep * divider):
+				if gaussXY > 0:
+					for gaussZ in range (gaussZmin, gaussXY + gaussXY / gaussZsteps, gaussXY / gaussZsteps):
+						options['gaussXY'] = gaussXY / divider
+						options['gaussZ'] = gaussZ / divider
+						options['localBackground'] = threshold
+						options['seedRadius'] = seed
+						runSimulation(options, image, probabilityMap, results)
+				else:
+					gaussZ = gaussXY
+					options['gaussXY'] = gaussXY / divider
+					options['gaussZ'] = gaussZ / divider
+					options['localBackground'] = threshold
+					options['seedRadius'] = seed
+					runSimulation(options, image, probabilityMap, results)
 
-	results.show("Gaussian optimisation")
+	results.show("Optimisation results")

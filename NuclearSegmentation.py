@@ -98,7 +98,10 @@ for imageFile in os.listdir(inputDir):
 		classificator.save(pmImage, outputName)
 
 	### Blur nuclei probability map (1) to smoothen segmentation
-	IJ.run(probabilityMaps[1], "Gaussian Blur 3D...", "x=2 y=2 z=1");
+	IJ.run(probabilityMaps[1], "Gaussian Blur 3D...",
+		" x=" + "%f" % options['gaussXY'] + \
+		" y=" + "%f" % options['gaussXY'] + \
+		" z=" + "%f" % options['gaussZ'])
 
 	### Segment image using nuclear probability map (1)
 	print "Segmenting image..."
