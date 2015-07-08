@@ -6,7 +6,6 @@ class ImageProcessor(object):
 	### Class constructor
 	def __init__(self, options, directory = ""):
 		self.outputDir = options['outputDir']
-		self.inputDir = options['inputDir']
 		if directory != "":
 			directory = directory + os.path.sep
 			if not os.path.exists(self.outputDir + directory):

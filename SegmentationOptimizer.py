@@ -36,6 +36,9 @@ def runSimulation(options, image):
 	duplicator = Duplicator()
 	inputPM = duplicator.run(image)
 	inputPM.setTitle("Gauss_segment_input")
+
+	inputName = image.getTitle()
+	inputName = inputName[:inputName.rfind('.')]
 	
 	### Blur nuclei probability map to smoothen segmentation
 	IJ.run(inputPM, "Gaussian Blur 3D...",
@@ -50,7 +53,7 @@ def runSimulation(options, image):
 	outputName = "OMG_XY" + ("%f" % options['gaussXY']) + "_Z" + ("%f" % options['gaussZ']) + \
 		"_TH" + ("%i" % options['localBackground']) + \
 		"_SR" + ("%i" % options['seedRadius']) + \
-		"_" + image.getTitle
+		"_" + inputName
 	segmentator.save(segmentedImage, outputName)
 
 	### Get object measurements
@@ -102,6 +105,18 @@ options['gaussXYmax'] = 5.2
 options['gaussXYstep'] = 0.2
 options['gaussZmin'] = 0
 options['gaussZsteps'] = 5
+
+options['thresholdMin'] = 12288
+options['thresholdMax'] = 16384
+options['thresholdStep'] = 4096
+options['seedMin'] = 2
+options['seedMax'] = 4
+options['seedStep'] = 2
+options['gaussXYmin'] = 0
+options['gaussXYmax'] = 3
+options['gaussXYstep'] = 1
+options['gaussZmin'] = 0
+options['gaussZsteps'] = 1
 
 ### Open probability map
 image = IJ.openImage(options['inputFile'])
