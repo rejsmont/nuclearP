@@ -1,7 +1,7 @@
 import sys
 import os
 
-sys.path.append("/Users/u0078517/src/ImageProcessing/nuclearP")
+sys.path.append("C:\\Users\\rejsmont\\nuclearP")
 
 ### These imports are required in development environment
 import Options
@@ -39,10 +39,10 @@ options = getDefaults()
 
 
 ### Hard-coded options for testing
-inputDir = "/Users/u0078517/Desktop/Samples/"
-outputDir = "/Users/u0078517/Desktop/Output/"
-psfFile = "/Users/u0078517/Desktop/Parameters/PSF-Venus-test.tif"
-modelFile = "/Users/u0078517/Desktop/Parameters/classifier.model"
+inputDir =  "E:\\rejsmont\\nuclearP\\samples\\"
+outputDir = "E:\\rejsmont\\nuclearP\\output\\"
+psfFile = "E:\\rejsmont\\nuclearP\\parameters\\PSF-Venus-test.tif"
+modelFile = "E:\\rejsmont\\nuclearP\\parameters\\classifier.model"
 options['modelFile'] = modelFile
 options['channel'] = 0
 options['regparam'] = 0.01

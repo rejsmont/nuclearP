@@ -1,7 +1,7 @@
 import sys
 import os
 
-sys.path.append("/Users/u0078517/src/ImageProcessing/nuclearP")
+sys.path.append("C:\\Users\\rejsmont\\nuclearP")
 
 ### These are required in development environment
 import Options
@@ -59,7 +59,7 @@ def runSimulation(options, image, probabilityMap, results):
 
 	### Get object measurements
 	print ">>> Measuring objects..."
-	ranges = [0, 0, 0, 0, 0, 0]
+	ranges = [0, 0, 0, 0, 0, 0, 0, 0]
 	analyzer = Analyzer(options, segmentator.objects, "Results")
 	segmented = ImageInt.wrap(segmentedImage)
 	for objectV in analyzer.objects.getObjectsList():
@@ -67,30 +67,36 @@ def runSimulation(options, image, probabilityMap, results):
 			(not objectV.edgeImage(segmented, not options['edgeXY'], not options['edgeZ'])):
 			ranges[0] = ranges[0] + 1
 			volume = objectV.getVolumePixels()
-			if volume <= 500:
+			if volume <= 250:
 				ranges[1] = ranges[1] + 1
-			elif volume > 500 and volume <= 1000:
+			elif volume > 250 and volume <= 500:
 				ranges[2] = ranges[2] + 1
-			elif volume > 1000 and volume <= 1500:
+			elif volume > 500 and volume <= 750:
 				ranges[3] = ranges[3] + 1
-			else:
+			elif volume > 750 and volume <= 1000:
 				ranges[4] = ranges[4] + 1
+			elif volume > 1000 and volume <= 1500:
+				ranges[5] = ranges[5] + 1
+			else:
+				ranges[6] = ranges[6] + 1
 		else:
-			ranges[5] = ranges[5] + 1
+			ranges[7] = ranges[7] + 1
 			
 	results.addValue("TOTAL", ranges[0])
-	results.addValue("0-500", ranges[1])
-	results.addValue("501-1000", ranges[2])
-	results.addValue("1001-1500", ranges[3])
-	results.addValue(">1500", ranges[4])
-	results.addValue("Skipped", ranges[5])
+	results.addValue("0-250", ranges[1])
+	results.addValue("251-500", ranges[2])
+	results.addValue("501-750", ranges[3])
+	results.addValue("751-1000", ranges[4])
+	results.addValue("1001-1500", ranges[5])
+	results.addValue(">1500", ranges[6])
+	results.addValue("Skipped", ranges[7])
 	
 
 ### Hard-set variables for testing
-inputDir = "/Users/u0078517/Desktop/Samples/"
-outputDir = "/Users/u0078517/Desktop/Output/"
-psfFile = "/Users/u0078517/Desktop/Parameters/PSF-Venus-test.tif"
-modelFile = "/Users/u0078517/Desktop/Parameters/classifier.model"
+inputDir =  "E:\\rejsmont\\nuclearP\\samples\\"
+outputDir = "E:\\rejsmont\\nuclearP\\output\\"
+psfFile = "E:\\rejsmont\\nuclearP\\parameters\\PSF-Venus-test.tif"
+modelFile = "E:\\rejsmont\\nuclearP\\parameters\\classifier.model"
 
 options = getDefaults()
 options['inputDir'] = inputDir
@@ -101,7 +107,7 @@ options['channel'] = 0
 options['regparam'] = 0.01
 options['iterations'] = 50
 
-options['edgeXY'] = True
+options['edgeXY'] = False
 options['edgeZ'] = False
 
 ### Loop through input images
@@ -116,21 +122,21 @@ for imageFile in os.listdir(inputDir):
 	inputName = "C" + "%i" % options['channel'] + "-" + title
 
 	### Open probability map
-	print "Opening PM " + options['outputDir'] + "Maps/PM1_" + inputName + ".tif"
-	probabilityMap = IJ.openImage(options['outputDir'] + "Maps/PM1_" + inputName + ".tif")
+	print "Opening PM " + options['outputDir'] + "Maps\\PM1_" + inputName + ".tif"
+	probabilityMap = IJ.openImage(options['outputDir'] + "Maps\\PM1_" + inputName + ".tif")
 
 	### Setup simulation parameters
-	thresholdMin = 12288
-	thresholdMax = 16384
+	thresholdMin = 4096
+	thresholdMax = 36864
 	thresholdStep = 4096
 	seedMin = 2
-	seedMax = 4
+	seedMax = 13
 	seedStep = 2
 	gaussXYmin = 0
 	gaussZmin = 0
-	gaussXYmax = 3
-	gaussXYstep = 1
-	gaussZsteps = 1
+	gaussXYmax = 5.2
+	gaussXYstep = 0.2
+	gaussZsteps = 5
 	divider = 1 / gaussXYstep * gaussZsteps
 
 	### Setup results table
