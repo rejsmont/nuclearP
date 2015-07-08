@@ -50,7 +50,7 @@ def runSimulation(options, image):
 	outputName = "OMG_XY" + ("%f" % options['gaussXY']) + "_Z" + ("%f" % options['gaussZ']) + \
 		"_TH" + ("%i" % options['localBackground']) + \
 		"_SR" + ("%i" % options['seedRadius']) + \
-		"_" + inputName
+		"_" + image.getTitle
 	segmentator.save(segmentedImage, outputName)
 
 	### Get object measurements
