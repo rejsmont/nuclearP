@@ -8,7 +8,7 @@ class ImageProcessor(object):
 		self.outputDir = options['outputDir']
 		self.inputDir = options['inputDir']
 		if directory != "":
-			directory = directory + "/"
+			directory = directory + os.path.sep
 			if not os.path.exists(self.outputDir + directory):
 				os.makedirs(self.outputDir + directory)
 		self.subDir = directory
