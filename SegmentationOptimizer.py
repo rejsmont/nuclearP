@@ -19,7 +19,7 @@ from ij.plugin import Duplicator
 from Options import getOptions, getDefaults
 from Segmentation import Segmentator
 from Analysis import Analyzer
-
+from mcib3d.image3d import ImageInt
 
 def runSimulation(options, image, probabilityMap, results):
 	
@@ -59,25 +59,31 @@ def runSimulation(options, image, probabilityMap, results):
 
 	### Get object measurements
 	print ">>> Measuring objects..."
-	ranges = [0, 0, 0, 0, 0]
+	ranges = [0, 0, 0, 0, 0, 0]
 	analyzer = Analyzer(options, segmentator.objects, "Results")
+	segmented = ImageInt.wrap(segmentedImage)
 	for objectV in analyzer.objects.getObjectsList():
-		ranges[0] = ranges[0] + 1
-		volume = objectV.getVolumePixels()
-		if volume <= 500:
-			ranges[1] = ranges[1] + 1
-		elif volume > 500 and volume <= 1000:
-			ranges[2] = ranges[2] + 1
-		elif volume > 1000 and volume <= 1500:
-			ranges[3] = ranges[3] + 1
+		if (options['edgeXY'] and options['edgeZ']) or \
+			(not objectV.edgeImage(segmented, not options['edgeXY'], not options['edgeZ'])):
+			ranges[0] = ranges[0] + 1
+			volume = objectV.getVolumePixels()
+			if volume <= 500:
+				ranges[1] = ranges[1] + 1
+			elif volume > 500 and volume <= 1000:
+				ranges[2] = ranges[2] + 1
+			elif volume > 1000 and volume <= 1500:
+				ranges[3] = ranges[3] + 1
+			else:
+				ranges[4] = ranges[4] + 1
 		else:
-			ranges[4] = ranges[4] + 1
-
+			ranges[5] = ranges[5] + 1
+			
 	results.addValue("TOTAL", ranges[0])
 	results.addValue("0-500", ranges[1])
 	results.addValue("501-1000", ranges[2])
 	results.addValue("1001-1500", ranges[3])
 	results.addValue(">1500", ranges[4])
+	results.addValue("Skipped", ranges[5])
 	
 
 ### Hard-set variables for testing
@@ -94,6 +100,9 @@ options['modelFile'] = modelFile
 options['channel'] = 0
 options['regparam'] = 0.01
 options['iterations'] = 50
+
+options['edgeXY'] = True
+options['edgeZ'] = False
 
 ### Loop through input images
 for imageFile in os.listdir(inputDir):
@@ -148,4 +157,4 @@ for imageFile in os.listdir(inputDir):
 					runSimulation(options, image, probabilityMap, results)
 
 	results.show("Optimisation results")
-	results.save(options['outputDir'] + OptimizationResults + ".csv")
+	results.save(options['outputDir'] + "OptimizationResults" + ".csv")
