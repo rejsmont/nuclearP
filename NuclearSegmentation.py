@@ -55,25 +55,25 @@ if __name__ == '__main__':
 	options['psfFile'] = args.deconv_psf
 	options['modelFile'] = args.class_model
 	if args.img_channel:
-		options['channel'] = args.img_channel
+		options['channel'] = int(args.img_channel)
 	if args.deconv_lambda:
-		options['regparam'] = args.deconv_lambda
+		options['regparam'] = float(args.deconv_lambda)
 	if args.deconv_k:
-		options['iterations'] = args.deconv_k
+		options['iterations'] = int(args.deconv_k)
 	if args.gauss_xy:
-		options['gaussXY'] = args.gauss_xy
+		options['gaussXY'] = float(args.gauss_xy)
 	if args.gauss_z:
-		options['gaussZ'] = args.gauss_z
+		options['gaussZ'] = float(args.gauss_z)
 	if args.seg_bkgd_thr:
-		options['localBackground'] = args.seg_bkgd_thr
+		options['localBackground'] = int(args.seg_bkgd_thr)
 	if args.seg_seed_thr:
-		options['seedsThreshold'] = args.seg_seed_thr
+		options['seedsThreshold'] = int(args.seg_seed_thr)
 	if args.seg_seed_r:
-		options['seedRadius'] = args.seg_seed_r
+		options['seedRadius'] = int(args.seg_seed_r)
 	if args.seg_vol_min:
-		options['volumeMin'] = args.seg_vol_min
+		options['volumeMin'] = int(args.seg_vol_min)
 	if args.seg_vol_max:
-		options['volumeMax'] = args.seg_vol_max
+		options['volumeMax'] = int(args.seg_vol_max)
 	if args.seg_watershed:
 		if str(args.seg_watershed).upper() == "TRUE":
 			options['watershed'] = True

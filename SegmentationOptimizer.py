@@ -172,45 +172,45 @@ if __name__ == '__main__':
 	options['paramsOut'] = args.params_out
 	
 	if args.gauss_xy:
-		options['gaussXY'] = args.gauss_xy
+		options['gaussXY'] = float(args.gauss_xy)
 	if args.gauss_xy_min:
-		options['gaussXYmin'] = args.gauss_xy_min
+		options['gaussXYmin'] = float(args.gauss_xy_min)
 	if args.gauss_xy_max:
-		options['gaussXYmax'] = args.gauss_xy_max
+		options['gaussXYmax'] = float(args.gauss_xy_max)
 	if args.gauss_xy_step:
-		options['gaussXYstep'] = args.gauss_xy_step
+		options['gaussXYstep'] = float(args.gauss_xy_step)
 	
 	if args.gauss_z:
-		options['gaussZ'] = args.gauss_z
+		options['gaussZ'] = float(args.gauss_z)
 	if args.gauss_z_min:
-		options['gaussZmin'] = args.gauss_z_min
+		options['gaussZmin'] = float(args.gauss_z_min)
 	if args.gauss_z_steps:
-		options['gaussZsteps'] = args.gauss_z_steps
+		options['gaussZsteps'] = int(args.gauss_z_steps)
 	
 	if args.seg_bkgd_thr:
-		options['localBackground'] = args.seg_bkgd_thr
+		options['localBackground'] = int(args.seg_bkgd_thr)
 	if args.seg_bkgd_thr_min:
-		options['thresholdMin'] = args.seg_bkgd_thr_min
+		options['thresholdMin'] = int(args.seg_bkgd_thr_min)
 	if args.seg_bkgd_thr_max:
-		options['thresholdMax'] = args.seg_bkgd_thr_max
+		options['thresholdMax'] = int(args.seg_bkgd_thr_max)
 	if args.seg_bkgd_thr_step:
-		options['thresholdStep'] = args.seg_bkgd_thr_step
+		options['thresholdStep'] = int(args.seg_bkgd_thr_step)
 
 	if args.seg_seed_r:
-		options['seedRadius'] = args.seg_seed_r
+		options['seedRadius'] = int(args.seg_seed_r)
 	if args.seg_seed_r_min:
-		options['seedMin'] = args.seg_seed_r_min
+		options['seedMin'] = int(args.seg_seed_r_min)
 	if args.seg_seed_r_max:
-		options['seedMax'] = args.seg_seed_r_max
+		options['seedMax'] = int(args.seg_seed_r_max)
 	if args.seg_seed_r_step:
-		options['seedStep'] = args.seg_seed_r_step
+		options['seedStep'] = int(args.seg_seed_r_step)
 			
 	if args.seg_seed_thr:
-		options['seedsThreshold'] = args.seg_seed_thr
+		options['seedsThreshold'] = int(args.seg_seed_thr)
 	if args.seg_vol_min:
-		options['volumeMin'] = args.seg_vol_min
+		options['volumeMin'] = int(args.seg_vol_min)
 	if args.seg_vol_max:
-		options['volumeMax'] = args.seg_vol_max
+		options['volumeMax'] = int(args.seg_vol_max)
 
 	if args.one_shot:
 		options['oneShot'] = True
@@ -224,17 +224,17 @@ if __name__ == '__main__':
 			options['watershed'] = False
 	if args.exclude_edge_xy:
 		if str(args.exclude_edge_xy).upper() == "TRUE":
-			options['edgeXY'] = True
-		else:
 			options['edgeXY'] = False
+		else:
+			options['edgeXY'] = True
 	if args.exclude_edge_z:
 		if str(args.exclude_edge_z).upper() == "TRUE":
-			options['edgeZ'] = True
-		else:
 			options['edgeZ'] = False
+		else:
+			options['edgeZ'] = True
 else:
 	options['inputFile'] = "sample.tif"
-	options['outputDir'] = ""
+	options['outputDir'] = "./"
 
 if options['paramsOut'] == None:
 	results = []
