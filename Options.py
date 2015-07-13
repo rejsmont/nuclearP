@@ -19,12 +19,15 @@ def getOptions(options, image):
 		options['regparam'] = dialog.getNextNumber()
 		options['iterations'] = dialog.getNextNumber()
 	
-	print "Channel: " + "%i" % options['channel'] + " lambda: " + "%f" % options['regparam'] + " iter: " + "%i" % options['iterations']
-	
 	return options
 
 def getDefaults():
 	options = {}
+
+	### Default options for Deconvolution
+	options['channel'] = 0
+	options['regparam'] = 0.01
+	options['iterations'] = 50
 
 	### Blur parameters - 0 for no blur ###
 	options['gaussXY'] = 2

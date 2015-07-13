@@ -15,7 +15,7 @@ class Deconvolutor(ImageProcessor):
 		super(Deconvolutor, self).__init__(options, directory)
 		self.psf = psf
 		self.parameters = Parameters()
-		self.parameters.useFFTW = True
+		self.parameters.useFFTW = False
 		self.algorithm = TikhonovMiller()
 		self.algorithm.K = options['iterations']
 		self.algorithm.lambda = options['regparam']
