@@ -3,6 +3,9 @@ import os
 
 sys.path.append("/Users/u0078517/src/ImageProcessing/nuclearP")
 
+### Import argparse to parse command-line arguments
+import argparse
+
 ### These imports are required in development environment
 import Options
 reload(Options)
@@ -38,29 +41,33 @@ options = getDefaults()
 #options['modelFile'] = modelDialog.getPath()
 
 
-### Hard-coded options for testing
-inputDir = "/Users/u0078517/Desktop/Samples/"
-outputDir = "/Users/u0078517/Desktop/Output/"
-psfFile = "/Users/u0078517/Desktop/Parameters/PSF-Venus-test.tif"
-modelFile = "/Users/u0078517/Desktop/Parameters/classifier.model"
-options['modelFile'] = modelFile
+if __name__ == '__main__':
+	parser = argparse.ArgumentParser(description="Nuclear Segmentation with Fiji")
+	parser.add_argument('--input-dir')
+	parser.add_argument('--output-dir')
+	parser.add_argument('--psf-file')
+	parser.add_argument('--model-file')
+	args = parser.parse_args()
+else:
+	options['inputDir'] = "/Users/u0078517/Desktop/Samples/"
+	options['outputDir'] = "/Users/u0078517/Desktop/Output/"
+	options['psfFile'] = "/Users/u0078517/Desktop/Parameters/PSF-Venus-test.tif"
+	options['modelFile'] = "/Users/u0078517/Desktop/Parameters/classifier.model"
+
 options['channel'] = 0
 options['regparam'] = 0.01
 options['iterations'] = 50
 
-options['inputDir'] = inputDir
-options['outputDir'] = outputDir
-
 print "Input Directory: " + options['inputDir']
 print "Output Directory: " + options['outputDir']
-print "PSF file: " + psfFile
+print "PSF file: " + options['psfFile']
 print "Model file: " + options['modelFile']
 
-### Initiate segmentator
+
+### Initiate worker objects
 deconvolutor = None
 classificator = None
 segmentator = None
-
 
 for adir in ["home", "startup", "imagej", "plugins", "macros", "luts", "temp", "current", "default", "image"]:
     print adir + " directory: " + str(IJ.getDirectory(adir))
@@ -69,8 +76,8 @@ for adir in ["home", "startup", "imagej", "plugins", "macros", "luts", "temp", "
 for imageFile in os.listdir(inputDir):
 
 	### Open file for processing
-	print "Opening " + inputDir + imageFile
-	image = IJ.openImage(inputDir + imageFile)
+	print "Opening " + options['inputDir'] + imageFile
+	image = IJ.openImage(options['inputDir'] + imageFile)
 	options = getOptions(options, image)
 	title = image.getTitle()
 	title = title[:title.rfind('.')]
