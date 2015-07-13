@@ -6,3 +6,7 @@ Tikhonov-Mueller deconvolution, WEKA for machine learning-based probability map 
 
 The macros are implemented in Jython and use Java APIs of plugins.
 
+To run the script from console, follow this example:
+```
+fiji --headless ./NuclearSegmentation.py --input-dir=./examples/input/ --class-model=./examples/nuclei-test.model --deconv-psf=./examples/psf-test.tif --output-dir=../output
+```
