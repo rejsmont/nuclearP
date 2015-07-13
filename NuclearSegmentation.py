@@ -61,6 +61,10 @@ deconvolutor = None
 classificator = None
 segmentator = None
 
+
+for adir in ["home", "startup", "imagej", "plugins", "macros", "luts", "temp", "current", "default", "image"]:
+    print adir + " directory: " + str(IJ.getDirectory(adir))
+
 ### Loop through input images
 for imageFile in os.listdir(inputDir):
 
