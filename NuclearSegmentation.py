@@ -48,6 +48,10 @@ if __name__ == '__main__':
 	parser.add_argument('--psf-file')
 	parser.add_argument('--model-file')
 	args = parser.parse_args()
+	options['inputDir'] = args.input_dir
+	options['outputDir'] = args.output_dir
+	options['psfFile'] = args.psf_file
+	options['modelFile'] = args.model_file
 else:
 	options['inputDir'] = "/Users/u0078517/Desktop/Samples/"
 	options['outputDir'] = "/Users/u0078517/Desktop/Output/"
@@ -73,7 +77,7 @@ for adir in ["home", "startup", "imagej", "plugins", "macros", "luts", "temp", "
     print adir + " directory: " + str(IJ.getDirectory(adir))
 
 ### Loop through input images
-for imageFile in os.listdir(inputDir):
+for imageFile in os.listdir(options['inputDir']):
 
 	### Open file for processing
 	print "Opening " + options['inputDir'] + imageFile
