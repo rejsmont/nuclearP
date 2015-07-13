@@ -45,7 +45,7 @@ fiji --headless ./SegmentationOptimizer.py \
     --output-file=simulation-2-1-12288-2.csv
 ```
 
-To run simulations whole paramater array:
+To run simulations for the whole paramater array:
 ```
 fiji --headless ./SegmentationOptimizer.py \
     --gauss-xy-min=0 \
