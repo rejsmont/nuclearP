@@ -1,7 +1,8 @@
 import sys
 import os
 
-sys.path.append("/Users/u0078517/src/ImageProcessing/nuclearP")
+### Import argparse to parse command-line arguments
+import argparse
 
 ### These are required in development environment
 import Options
@@ -17,7 +18,7 @@ from ij import IJ
 from ij.io import DirectoryChooser, OpenDialog, FileSaver
 from ij.measure import ResultsTable
 from ij.plugin import Duplicator
-from Options import getOptions, getDefaults
+from Options import getOptions, getDefaults as getBaseDefaults
 from Segmentation import Segmentator
 from Analysis import Analyzer
 from mcib3d.image3d import ImageInt
@@ -50,7 +51,7 @@ def runSimulation(options, image):
 	print ">>> Segmenting image..."
 	segmentator = Segmentator(options, "Segmented")
 	segmentedImage = segmentator.process(inputPM)
-	outputName = "OMG_XY" + ("%f" % options['gaussXY']) + "_Z" + ("%f" % options['gaussZ']) + \
+	outputName = "OM_XY" + ("%f" % options['gaussXY']) + "_Z" + ("%f" % options['gaussZ']) + \
 		"_TH" + ("%i" % options['localBackground']) + \
 		"_SR" + ("%i" % options['seedRadius']) + \
 		"_" + inputName
@@ -83,124 +84,211 @@ def runSimulation(options, image):
 	
 	return results
 
-### Hard-set variables for testing
-options = getDefaults()
-options['inputFile'] = "/Users/u0078517/Desktop/Output/Maps/PM1_C0-E2C-disc-1-sample.tif"
-options['outputDir'] = "/Users/u0078517/Desktop/Output/"
-options['channel'] = 0
-options['regparam'] = 0.01
-options['iterations'] = 50
-options['edgeXY'] = True
-options['edgeZ'] = False
+def getDefaults():
+	options = getBaseDefaults()
+	options['edgeXY'] = True
+	options['edgeZ'] = False
 
-### Simulation options
-options['thresholdMin'] = 4096
-options['thresholdMax'] = 36864
-options['thresholdStep'] = 4096
-options['seedMin'] = 2
-options['seedMax'] = 13
-options['seedStep'] = 2
-options['gaussXYmin'] = 0
-options['gaussXYmax'] = 5.2
-options['gaussXYstep'] = 0.2
-options['gaussZmin'] = 0
-options['gaussZsteps'] = 5
+	options['thresholdMin'] = 12288
+	options['thresholdMax'] = 16384
+	options['thresholdStep'] = 4096
+	options['seedMin'] = 2
+	options['seedMax'] = 4
+	options['seedStep'] = 2
+	options['gaussXYmin'] = 0
+	options['gaussXYmax'] = 3
+	options['gaussXYstep'] = 1
+	options['gaussZmin'] = 0
+	options['gaussZsteps'] = 1
+	options['outputFile'] = "simulation_results.csv"
+	
+	return options
 
-options['thresholdMin'] = 12288
-options['thresholdMax'] = 16384
-options['thresholdStep'] = 4096
-options['seedMin'] = 2
-options['seedMax'] = 4
-options['seedStep'] = 2
-options['gaussXYmin'] = 0
-options['gaussXYmax'] = 3
-options['gaussXYstep'] = 1
-options['gaussZmin'] = 0
-options['gaussZsteps'] = 1
 
-### Open probability map
-image = IJ.openImage(options['inputFile'])
-divider = 1 / options['gaussXYstep'] * options['gaussZsteps']
-
-### Generate parameter array
-parameters = []
-results = []
-for threshold in range(options['thresholdMin'], options['thresholdMax'], options['thresholdStep']):
-	for seed in range(options['seedMin'], options['seedMax'], options['seedStep']):
-		for gaussXY in range(options['gaussXYmin'] * divider, \
-			options['gaussXYmax'] * divider, \
-			options['gaussXYstep'] * divider):
-			if gaussXY > 0:
-				for gaussZ in range (options['gaussZmin'], \
-					gaussXY + gaussXY / options['gaussZsteps'], \
-					gaussXY / options['gaussZsteps']):
+def makeParameters(options):
+	parameters = []
+	divider = 1 / options['gaussXYstep'] * options['gaussZsteps']
+	for threshold in range(options['thresholdMin'], options['thresholdMax'], options['thresholdStep']):
+		for seed in range(options['seedMin'], options['seedMax'], options['seedStep']):
+			for gaussXY in range(options['gaussXYmin'] * divider, \
+				options['gaussXYmax'] * divider, \
+				options['gaussXYstep'] * divider):
+				if gaussXY > 0:
+					for gaussZ in range (options['gaussZmin'], \
+						gaussXY + gaussXY / options['gaussZsteps'], \
+						gaussXY / options['gaussZsteps']):
+						opts = {}
+						opts['gaussXY'] = gaussXY / divider
+						opts['gaussZ'] = gaussZ / divider
+						opts['localBackground'] = threshold
+						opts['seedRadius'] = seed
+						parameters.append(opts)
+				else:
+					gaussZ = gaussXY
 					opts = {}
 					opts['gaussXY'] = gaussXY / divider
 					opts['gaussZ'] = gaussZ / divider
 					opts['localBackground'] = threshold
 					opts['seedRadius'] = seed
 					parameters.append(opts)
-					res = {}
-					results.append(res)
-			else:
-				gaussZ = gaussXY
-				opts = {}
-				opts['gaussXY'] = gaussXY / divider
-				opts['gaussZ'] = gaussZ / divider
-				opts['localBackground'] = threshold
-				opts['seedRadius'] = seed
-				parameters.append(opts)
-				res = {}
-				results.append(res)
+	
+	return parameters
 
-ncpus = Runtime.getRuntime().availableProcessors()
+options = getDefaults()
 
-print "Generated " + "%i" % len(parameters) + " parameters and will fill " + "%i" % len(results) + " results"
-print "Detected " + "%i" % ncpus + " CPUs"
+if __name__ == '__main__':
+	parser = argparse.ArgumentParser(description="Nuclear Segmentation Optimizer")
+	parser.add_argument('--input-file')
+	parser.add_argument('--output-file')
+	parser.add_argument('--output-dir')
+	parser.add_argument('--params-out')
+	parser.add_argument('--one-shot')
+	parser.add_argument('--gauss-xy')
+	parser.add_argument('--gauss-xy-min')
+	parser.add_argument('--gauss-xy-max')
+	parser.add_argument('--gauss-xy-step')
+	parser.add_argument('--gauss-z')
+	parser.add_argument('--gauss-z-min')
+	parser.add_argument('--gauss-z-steps')
+	parser.add_argument('--seg-bkgd-thr')
+	parser.add_argument('--seg-bkgd-thr-min')
+	parser.add_argument('--seg-bkgd-thr-max')
+	parser.add_argument('--seg-bkgd-thr-step')
+	parser.add_argument('--seg-seed-thr')
+	parser.add_argument('--seg-seed-r')
+	parser.add_argument('--seg-seed-r-min')
+	parser.add_argument('--seg-seed-r-max')
+	parser.add_argument('--seg-seed-r-step')
+	parser.add_argument('--seg-watershed')
+	parser.add_argument('--seg-vol-min')
+	parser.add_argument('--seg-vol-max')
+	parser.add_argument('--exclude-edge-xy')
+	parser.add_argument('--exclude-edge-z')
+	
+	args = parser.parse_args()
+	options['inputFile'] = args.input_file
+	options['outputFile'] = args.output_file
+	options['outputDir'] = args.output_dir
+	options['paramsOut'] = args.params_out
+	
+	if args.gauss_xy:
+		options['gaussXY'] = args.gauss_xy
+	if args.gauss_xy_min:
+		options['gaussXYmin'] = args.gauss_xy_min
+	if args.gauss_xy_max:
+		options['gaussXYmax'] = args.gauss_xy_max
+	if args.gauss_xy_step:
+		options['gaussXYstep'] = args.gauss_xy_step
+	
+	if args.gauss_z:
+		options['gaussZ'] = args.gauss_z
+	if args.gauss_z_min:
+		options['gaussZmin'] = args.gauss_z_min
+	if args.gauss_z_steps:
+		options['gaussZsteps'] = args.gauss_z_steps
+	
+	if args.seg_bkgd_thr:
+		options['localBackground'] = args.seg_bkgd_thr
+	if args.seg_bkgd_thr_min:
+		options['thresholdMin'] = args.seg_bkgd_thr_min
+	if args.seg_bkgd_thr_max:
+		options['thresholdMax'] = args.seg_bkgd_thr_max
+	if args.seg_bkgd_thr_step:
+		options['thresholdStep'] = args.seg_bkgd_thr_step
 
-counter = AtomicInteger(0)
-threads = []
+	if args.seg_seed_r:
+		options['seedRadius'] = args.seg_seed_r
+	if args.seg_seed_r_min:
+		options['seedMin'] = args.seg_seed_r_min
+	if args.seg_seed_r_max:
+		options['seedMax'] = args.seg_seed_r_max
+	if args.seg_seed_r_step:
+		options['seedStep'] = args.seg_seed_r_step
+			
+	if args.seg_seed_thr:
+		options['seedsThreshold'] = args.seg_seed_thr
+	if args.seg_vol_min:
+		options['volumeMin'] = args.seg_vol_min
+	if args.seg_vol_max:
+		options['volumeMax'] = args.seg_vol_max
 
-def runThread(parameters, options, image, results):
-
-	index = counter.getAndIncrement()
-	while index < len(parameters):
-		thread = currentThread()
-		opts = options.copy()
-		opts.update(parameters[index])
-		res = runSimulation(opts, image)
-		results[index].update(res)
-		index = counter.getAndIncrement()
+	if args.one_shot:
+		options['oneShot'] = True
+	else:
+		options['oneShot'] = False
 		
-	return None
+	if args.seg_watershed:
+		if str(args.seg_watershed).upper() == "TRUE":
+			options['watershed'] = True
+		else:
+			options['watershed'] = False
+	if args.exclude_edge_xy:
+		if str(args.exclude_edge_xy).upper() == "TRUE":
+			options['edgeXY'] = True
+		else:
+			options['edgeXY'] = False
+	if args.exclude_edge_z:
+		if str(args.exclude_edge_z).upper() == "TRUE":
+			options['edgeZ'] = True
+		else:
+			options['edgeZ'] = False
+else:
+	options['inputFile'] = "sample.tif"
+	options['outputDir'] = ""
 
-for i in range(0, ncpus):
-	threads.append(Thread(target=lambda: runThread(parameters, options, image, results)))
+if options['paramsOut'] == None:
+	results = []
+	image = IJ.openImage(options['inputFile'])
+	
+	if options['oneShot']:
+		results.append(runSimulation(options, image))
+	else:
+		parameters = makeParameters(options)
+		for index in range(0, len(parameters)):
+			options.update(parameters[index])
+			results.append(runSimulation(options, image))
+	
+	resultsTable = ResultsTable()
+	resultsTable.showRowNumbers(False)
 
-for i in range(0, len(threads)):
-	threads[i].start()
+	for i in range(0, len(results)):
+		if options['oneShot']:
+			localBackground = options['localBackground']
+			seedRadius = options['seedRadius']
+			gaussXY = options['gaussXY']
+			gaussZ = options['gaussZ']
+		else:
+			localBackground = parameters[i]['localBackground']
+			seedRadius = parameters[i]['seedRadius']
+			gaussXY = parameters[i]['gaussXY']
+			gaussZ = parameters[i]['gaussZ']
+		
+		resultsTable.incrementCounter()
+		resultsTable.addValue("Threshold", localBackground)
+		resultsTable.addValue("Seed radius", seedRadius)
+		resultsTable.addValue("GXY", gaussXY)
+		resultsTable.addValue("GZ", gaussZ)
+		resultsTable.addValue("TOTAL", results[i]['all'])
+		resultsTable.addValue("0-250", results[i]['0'])
+		resultsTable.addValue("251-500", results[i]['250'])
+		resultsTable.addValue("501-750", results[i]['500'])
+		resultsTable.addValue("751-1000", results[i]['750'])
+		resultsTable.addValue("1001-1500", results[i]['1000'])
+		resultsTable.addValue(">1501", results[i]['1500'])
+		resultsTable.addValue("Skipped", results[i]['edge'])
 
-for i in range(0, len(threads)):
-	threads[i].join()
+	resultsTable.save(options['outputDir'] + options['outputFile'])
 
-resultsTable = ResultsTable()
-resultsTable.showRowNumbers(False)
+else:
+	parametersTable = ResultsTable()
+	parametersTable.showRowNumbers(False)
+	parameters = makeParameters(options)
+	
+	for i in range(0, len(parameters)):
+		parametersTable.incrementCounter()
+		parametersTable.addValue("Threshold", parameters[i]['localBackground'])
+		parametersTable.addValue("Seed radius", parameters[i]['seedRadius'])
+		parametersTable.addValue("GXY", parameters[i]['gaussXY'])
+		parametersTable.addValue("GZ", parameters[i]['gaussZ'])
 
-for i in range(0, len(parameters)):
-	resultsTable.incrementCounter()
-	resultsTable.addValue("Threshold", parameters[i]['localBackground'])
-	resultsTable.addValue("Seed radius", parameters[i]['seedRadius'])
-	resultsTable.addValue("GX", parameters[i]['gaussXY'])
-	resultsTable.addValue("GY", parameters[i]['gaussXY'])
-	resultsTable.addValue("GZ", parameters[i]['gaussZ'])
-	resultsTable.addValue("TOTAL", results[i]['all'])
-	resultsTable.addValue("0-250", results[i]['0'])
-	resultsTable.addValue("251-500", results[i]['250'])
-	resultsTable.addValue("501-750", results[i]['500'])
-	resultsTable.addValue("751-1000", results[i]['750'])
-	resultsTable.addValue("1001-1500", results[i]['1000'])
-	resultsTable.addValue(">1501", results[i]['1500'])
-	resultsTable.addValue("Skipped", results[i]['edge'])
-
-resultsTable.show("Optimisation results")
-resultsTable.save(options['outputDir'] + "OptimizationResults" + ".csv")
+	parametersTable.save(options['paramsOut'])

@@ -75,7 +75,7 @@ if __name__ == '__main__':
 	if args.seg_vol_max:
 		options['volumeMax'] = args.seg_vol_max
 	if args.seg_watershed:
-		if str(args.seg_watershed).upper() == TRUE:
+		if str(args.seg_watershed).upper() == "TRUE":
 			options['watershed'] = True
 		else:
 			options['watershed'] = False
@@ -148,13 +148,16 @@ def process(imageFile, options, workers):
 
 	### Get object measurements
 	print "Measuring objects..."
-	analyzer = Analyzer(options, workers['segmentator'].objects, "Results")
+	objects = workers['segmentator'].objects
+	analyzer = Analyzer(options, objects, "Results")
 	results = analyzer.getMeasurements(image)
 	outputName =  "OBJ_" + title
 	analyzer.save(results, outputName)
 
 	### This should be it!
 	print "Image " + imageFile + " processed!"
+	
+	return objects
 
 
 if options['inputDir']:
@@ -162,5 +165,3 @@ if options['inputDir']:
 		process(options['inputDir'] + imageFile, options, workers)
 elif options['inputFile']:
 	process(options['inputFile'], options, workers)
-
-	
