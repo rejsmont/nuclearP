@@ -89,7 +89,7 @@ else:
 	options['outputDir'] = outputDialog.getDirectory()
 	options['psfFile'] = psfDialog.getPath()
 	options['modelFile'] = modelDialog.getPath()
-	my_dict.pop("channel", None)
+	options.pop("channel", None)
 
 print "Input Directory: " + options['inputDir']
 print "Output Directory: " + options['outputDir']

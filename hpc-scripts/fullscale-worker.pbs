@@ -19,7 +19,7 @@ cd $VSC_HOME/imageProcessing/nuclearP
     --class-model=$VSC_HOME/imageProcessing/fullscale/parameters/SP8-63x-1024-Venus.model \
     --deconv-psf=$VSC_HOME/imageProcessing/fullscale/parameters/PSF-SP8-63x-1024-Venus.tif \
     --output-dir=$VSC_HOME/imageProcessing/output/ \
-    --img-channel=0 \
+    --img-channel=1 \
     --deconv-lambda=0.01 \
     --deconv-k=50 \
     --gauss-xy=0.4 \
