@@ -1,0 +1,34 @@
+#!/bin/bash -l
+#PBS -l walltime=12:00:00
+#PBS -l nodes=10:ppn=1:ivy bridge
+#PBS -j oe
+#PBS -o fullscale_$PBS_JOBID.out
+echo "Job started on `hostname` at `date`"
+
+# This script requires worker framework
+# https://github.com/gjbex/worker
+# Submit using wsub -threaded -batch $THIS_FILE -data $IMAGE_LIST
+
+module unuse /apps/leuven/thinking/2014a/modules/all/
+module use /apps/leuven/thinking/2015a/modules/all/
+module load Java
+
+cd $VSC_HOME/imageProcessing/nuclearP
+../fiji --headless ./NuclearSegmentation.py \
+    --input-file=$input_file \
+    --class-model=$VSC_HOME/imageProcessing/fullscale/parameters/SP8-63x-1024-Venus.model \
+    --deconv-psf=$VSC_HOME/imageProcessing/fullscale/parameters/PSF-SP8-63x-1024-Venus.tif \
+    --output-dir=$VSC_HOME/imageProcessing/output/ \
+    --img-channel=0 \
+    --deconv-lambda=0.01 \
+    --deconv-k=50 \
+    --gauss-xy=0.4 \
+    --gauss-z=0.4 \
+    --seg-bkgd-thr=8192 \
+    --seg-seed-thr=128 \
+    --seg-seed-r=4 \
+    --seg-watershed=true \
+    --seg-vol-min=50 \
+    --seg-vol-max=10000
+
+echo "Job ended on `hostname` at `date`"

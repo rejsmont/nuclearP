@@ -1,0 +1,31 @@
+#!/bin/bash -l
+#PBS -l walltime=12:00:00
+#PBS -l nodes=10:ppn=5:ivybridge
+#PBS -j oe
+#PBS -o optimizer_$PBS_JOBID.out
+echo "Job started on `hostname` at `date`"
+
+# This script requires worker framework
+# https://github.com/gjbex/worker
+# Submit using wsub -threaded -batch $THIS_FILE -data $YOUR_DATA
+
+module unuse /apps/leuven/thinking/2014a/modules/all/
+module use /apps/leuven/thinking/2015a/modules/all/
+module load Java
+
+cd $VSC_HOME/imageProcessing/nuclearP
+../fiji --headless ./SegmentationOptimizer.py \
+    --one-shot=true \
+    --gauss-xy=$gauss_xy \
+    --gauss-z=$gauss_z \
+    --seg-bkgd-thr=$thrs \
+    --seg-seed-r=$seed_r \
+    --seg-seed-thr=127 \
+    --seg-watershed=true \
+    --exclude-edge-xy=true \
+    --exclude-edge-z=false \
+    --input-file=./examples/PM1_C0-sample.tif \
+    --output-dir=$VSC_HOME/imageProcessing/output/ \
+    --output-file=optimizer-$PBS_JOBID-$thrs-$seed_r-$gauss_xy-$gauss_z.csv
+
+echo "Job ended on `hostname` at `date`"
