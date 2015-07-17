@@ -91,7 +91,8 @@ else:
 	options['modelFile'] = modelDialog.getPath()
 	options.pop("channel", None)
 
-print "Input Directory: " + options['inputDir']
+if  options['inputDir'] != None:
+	print "Input Directory: " + options['inputDir']
 print "Output Directory: " + options['outputDir']
 print "PSF file: " + options['psfFile']
 print "Model file: " + options['modelFile']
