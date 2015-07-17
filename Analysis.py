@@ -10,6 +10,7 @@ from mcib3d.image3d import ImageHandler
 from mcib3d.image3d import ImageInt
 from mcib3d.image3d import Segment3DSpots
 from mcib3d.image3d.processing import FastFilters3D
+from mcib3d.geom import Voxel3D
 from mcib3d.geom import Object3DVoxels
 from mcib3d.geom import Objects3DPopulation
 
@@ -32,9 +33,9 @@ class Analyzer(ImageProcessor):
 	### Add objects from list or label image
 	def addObjects(self, objects):
 		if isinstance(objects, ImagePlus):
-			labelImage = ImageInt.wrap(image)
-			voxels = self.__readVoxels(imagePlus)
-			self.__addVoxels(self, objectVoxels, imagePlus)
+			#labelImage = ImageInt.wrap(objects)
+			voxels = self.__readVoxels(objects)
+			self.__addVoxels(voxels, objects)
 		else:
 			for objectV in objects:
 				self.objects.addObject(objectV) 
@@ -52,7 +53,7 @@ class Analyzer(ImageProcessor):
 		maxV = int(image.getMax())
 		voxels = []
 		for i in range(0, maxV - minV + 1):
-			vlist = []
+			vlist = ArrayList()
 			voxels.append(vlist)
 		for k in range(minZ, maxZ):
 			for j in range(minY, maxY):
@@ -61,7 +62,7 @@ class Analyzer(ImageProcessor):
 					if pixel > 0:
 						voxel = Voxel3D(i, j, k, pixel)
 						oid = int(pixel) - minV
-						voxels[oid].append(voxel)
+						voxels[oid].add(voxel)
 		objectVoxels = []
 		for i in range(0, maxV - minV + 1):
 			if voxels[i]:
@@ -79,7 +80,7 @@ class Analyzer(ImageProcessor):
 				objectV.setCalibration(calibration)
 				objectV.setLabelImage(image)
 				objectV.computeContours()
-				objectV.setLabelImage(null)
+				objectV.setLabelImage(None)
 				self.objects.addObject(objectV)
 
 	### Return 3D measurements
@@ -87,7 +88,7 @@ class Analyzer(ImageProcessor):
 		imageChannels = []
 		splitter = ChannelSplitter()
 		for channel in range (0, image.getNChannels()):
-			channelStack = splitter.getChannel(image, channel)
+			channelStack = splitter.getChannel(image, channel + 1)
 			imageChannels.append(ImageHandler.wrap(channelStack))
 	
 		results = ResultsTable()
