@@ -9,11 +9,17 @@ and 3D object management.
 The macros are implemented in Jython and use Java APIs of plugins.
 
 In short, these macros can be used to transform a 3D confocal image like this:
+
 ![Confocal image](examples/before.png)
+
 into a list of objects that can be visualized like this:
+
 ![Object pseudoimage](examples/after.png)
 
-## Segmenting images
+
+## How to use these scripts
+
+### Image segmentation
 
 To run the segmentation script from console using default options follow this example:
 ```
@@ -44,7 +50,7 @@ fiji --headless ./NuclearSegmentation.py \
     --seg-vol-max=10000
 ```
 
-## Visualization of results
+### Visualization of results
 
 To generate a pseudoimage from the raw image and the object list CSV:
 ```
@@ -54,7 +60,7 @@ fiji --headless ./Plotter.py \
     --output-image=../Output/Pseudoimage/mCh-disc-1.tif
 ```
 
-## Parameter optimization
+### Parameter optimization
 
 To generate parameters file for optimizer:
 ```
@@ -105,7 +111,7 @@ fiji --headless ./SegmentationOptimizer.py \
     --output-file=simulation-results.csv
 ```
 
-## High performance computing
+### High performance computing
 
 These are two PBS scripts for use on clusters/supercomputers in the
 `nuclearP/hpc-scripts/` subdirectory. `optimizer-worker.pbs` is an example
