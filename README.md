@@ -1,6 +1,7 @@
 # nuclearP
 
-This project aims to create a comprehensive set of ImageJ command-line utilities for nuclear
+This project aims to create a comprehensive set of [Fiji](http://fiji.sc/)/[ImageJ](http://imagej.net/)
+command-line utilities for nuclear
 segmentation and fluorescence intensity measurements in _Drosophila_ eye discs (or other
 complex tissue). It uses [Deconvolution Lab](http://bigwww.epfl.ch/algorithms/deconvolutionlab/)
 for Tikhonov-Mueller deconvolution, [WEKA](http://fiji.sc/Trainable_Weka_Segmentation) for
