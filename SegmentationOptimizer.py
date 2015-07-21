@@ -18,6 +18,7 @@ from ij import IJ
 from ij.io import DirectoryChooser, OpenDialog, FileSaver
 from ij.measure import ResultsTable
 from ij.plugin import Duplicator
+from loci.plugins import BF
 from Options import getOptions, getDefaults as getBaseDefaults
 from Segmentation import Segmentator
 from Analysis import Analyzer
@@ -238,7 +239,11 @@ else:
 
 if options['paramsOut'] == None:
 	results = []
-	image = IJ.openImage(options['inputFile'])
+	try:
+		image = IJ.openImage(options['inputFile'])
+	except Exception:
+		images = BF.openImagePlus(options['inputFile'])
+		image = images[0]
 	
 	if options['oneShot']:
 		results.append(runSimulation(options, image))

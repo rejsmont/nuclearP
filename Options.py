@@ -25,20 +25,20 @@ def getDefaults():
 	options = {}
 
 	### Default options for Deconvolution
-	options['channel'] = 0
+	options['channel'] = 1
 	options['regparam'] = 0.01
 	options['iterations'] = 50
 
 	### Blur parameters - 0 for no blur ###
-	options['gaussXY'] = 2
-	options['gaussZ'] = 0
+	options['gaussXY'] = 0.4
+	options['gaussZ'] = 0.4
 
 	### 3D Segmentation parameters ###
-	options['localBackground'] = 12287
+	options['localBackground'] = 8192
 	options['seedsThreshold'] = 127
 	options['volumeMin'] = 50
 	options['volumeMax'] = 10000
-	options['seedRadius'] = 2
+	options['seedRadius'] = 4
 	options['watershed'] = True
 	
 	return options

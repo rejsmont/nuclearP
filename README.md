@@ -1,18 +1,47 @@
 # nuclearP
-This project aims to create a comprehensive set of ImageJ macros for nuclear segmentation
-and fluorescence intensity measurements in Drosophila eye discs. It uses Deconvolution Lab for
-Tikhonov-Mueller deconvolution, WEKA for machine learning-based probability map calculation and
-3D ImageJ Suite for final segmentation and 3D object management.
+This project aims to create a comprehensive set of ImageJ command-line utilities for nuclear
+segmentation and fluorescence intensity measurements in Drosophila eye discs (or other
+complex tissue). It uses Deconvolution Lab for Tikhonov-Mueller deconvolution, WEKA for
+machine learning-based probability map calculation and 3D ImageJ Suite for final segmentation
+and 3D object management.
 
 The macros are implemented in Jython and use Java APIs of plugins.
 
-To run the segmentation script from console, follow this example:
+To run the segmentation script from console using default options follow this example:
 ```
 fiji --headless ./NuclearSegmentation.py \
     --input-dir=./examples/input/ \
     --class-model=./examples/nuclei-test.model \
     --deconv-psf=./examples/psf-test.tif \
     --output-dir=../output
+```
+
+You can set the following segmentation parameters:
+```
+fiji --headless ./NuclearSegmentation.py \
+    --input-dir=../Input \
+    --output-dir=../Output \
+    --img-channel=1 \
+    --deconv-psf=../Parameters/PSF-SP8-63x-1024-Venus.tif \
+    --deconv-lambda=0.01 \
+    --deconv-k=50 \
+    --class-model=../Parameters/SP8-63x-1024-Venus.model \
+    --gauss-xy=0.4 \
+    --gauss-z=0.4 \
+    --seg-bkgd-thr=8192 \
+    --seg-seed-thr=127 \
+    --seg-seed-r=4 \
+    --seg-watershed=true \
+    --seg-vol-min=50 \
+    --seg-vol-max=10000
+```
+
+To generate a pseudoimage from the raw image and the object list CSV:
+```
+fiji --headless ./Plotter.py \
+    --input-csv=../Output/Results/OBJ_mCh-disc-1.csv
+    --input-image=../Input/mCh-disc-1.tif
+    --output-image=../Output/Pseudoimage/mCh-disc-1.tif
 ```
 
 To generate parameters file for optimizer:
@@ -62,4 +91,14 @@ fiji --headless ./SegmentationOptimizer.py \
     --input-file=./examples/PM1_C0-sample.tif \
     --output-dir=../output/ \
     --output-file=simulation-results.csv
+```
+
+These are two PBS scripts for use on clusters/supercomputers in the
+`nuclearP/hpc-scripts/` subdirectory. `optimizer-worker.pbs` is an example
+job for optimizing segmentation parameters. `fullscale-worker.pbs` is an
+example of segmentation job. These scripts are using
+[worker framework](https://github.com/gjbex/worker) and should be
+submitted using `wsub`:
+```
+wsub -threaded -batch fullscale-worker.pbs -data image-list.csv
 ```

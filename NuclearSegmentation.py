@@ -20,15 +20,17 @@ reload(Analysis)
 from ij import IJ, ImagePlus
 from ij.io import DirectoryChooser, OpenDialog, FileSaver
 from ij.plugin import ChannelSplitter
+from loci.plugins import BF
 from Options import getOptions, getDefaults
 from Deconvolution import Deconvolutor
 from Classification import Classificator
 from Segmentation import Segmentator
 from Analysis import Analyzer
 
-
+# Create options array
 options = getDefaults()
 
+# Parse command line arguments
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description="Nuclear Segmentation with Fiji")
 	parser.add_argument('--input-dir')
@@ -79,7 +81,8 @@ if __name__ == '__main__':
 			options['watershed'] = True
 		else:
 			options['watershed'] = False
-	
+
+# or get values interactively from the user
 else:
 	inputDialog = DirectoryChooser("Please select a directory contaning your images")
 	outputDialog = DirectoryChooser("Please select a directory to save your results")
@@ -91,6 +94,7 @@ else:
 	options['modelFile'] = modelDialog.getPath()
 	options.pop("channel", None)
 
+# Show batch setup
 if  options['inputDir'] != None:
 	print "Input Directory: " + options['inputDir']
 print "Output Directory: " + options['outputDir']
@@ -104,7 +108,11 @@ workers = {'deconvolutor': None, 'classificator': None, 'segmentator': None}
 def process(imageFile, options, workers):
 	### Open file for processing
 	print "Opening " + imageFile
-	image = IJ.openImage(imageFile)
+	try:
+		image = IJ.openImage(imageFile)
+	except Exception:
+		images = BF.openImagePlus(imageFile)
+		image = images[0]
 	options = getOptions(options, image)
 	title = image.getTitle()
 	title = title[:title.rfind('.')]
