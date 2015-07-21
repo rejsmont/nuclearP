@@ -1,14 +1,16 @@
 # nuclearP
 
 This project aims to create a comprehensive set of ImageJ command-line utilities for nuclear
-segmentation and fluorescence intensity measurements in Drosophila eye discs (or other
-complex tissue). It uses Deconvolution Lab for Tikhonov-Mueller deconvolution, WEKA for
-machine learning-based probability map calculation and 3D ImageJ Suite for final segmentation
-and 3D object management.
+segmentation and fluorescence intensity measurements in _Drosophila_ eye discs (or other
+complex tissue). It uses [Deconvolution Lab](http://bigwww.epfl.ch/algorithms/deconvolutionlab/)
+for Tikhonov-Mueller deconvolution, [WEKA](http://fiji.sc/Trainable_Weka_Segmentation) for
+machine learning-based probability map calculation and
+[3D ImageJ Suite](http://imagejdocu.tudor.lu/doku.php?id=plugin:stacks:3d_ij_suite:start) for
+final segmentation and 3D object management.
 
-The macros are implemented in Jython and use Java APIs of plugins.
+The macros are implemented in Jython and use Java APIs of plugins listed above.
 
-In short, these macros can be used to transform a 3D confocal image like this:
+In short, these macros can be used to transform a 3D confocal image like this (only a single slice is shown):
 
 ![Confocal image](examples/before.png)
 
