@@ -7,9 +7,10 @@ import math
 import argparse
 
 ### Regular imports
-from ij import IJ, ImagePlus
+from ij import IJ, ImagePlus, ImageStack
 from ij.io import FileSaver
 from ij.plugin import RGBStackMerge
+from ij.process import ShortProcessor
 from loci.plugins import BF
 from mcib3d.geom import ObjectCreator3D
 
@@ -20,11 +21,19 @@ if __name__ == '__main__':
 	parser.add_argument('--input-csv')
 	parser.add_argument('--input-image')
 	parser.add_argument('--output-image')
+	parser.add_argument('--flat')
 	
 	args = parser.parse_args()
 	referenceFile = args.input_image
 	objectListFile = args.input_csv
 	outputFile = args.output_image
+	if args.flat:
+		if str(args.flat).upper() == "TRUE":
+			flat = True
+		else:
+			flat = False
+	else:
+		flat = False
 
 print referenceFile
 print objectListFile
@@ -81,17 +90,34 @@ for index, row in enumerate(objects):
 # Plot spheres
 channelImages = []
 
-for i in range(0, channels):
-	objectImage = ObjectCreator3D(sx, sy, sz)
-	for sphere in spheres:
-		fnorm = int(round((sphere['f'][i] - fmin[i]) / (fmax[i] - fmin[i]) * 65536.0))
-		objectImage.createEllipsoid(
-			sphere['cx'], sphere['cy'],	sphere['cz'],
-			sphere['r'], sphere['r'], round(sphere['r'] / zscale),
-			fnorm, False)
-	channelImages.append(ImagePlus("Rendering C" + "%i" % (i + 1), objectImage.getStack()))
+if flat == False:
+	for i in range(0, channels):
+		objectImage = ObjectCreator3D(sx, sy, sz)
+		for sphere in spheres:
+			fnorm = int(round((sphere['f'][i] - fmin[i]) / (fmax[i] - fmin[i]) * 65536.0))
+			objectImage.createEllipsoid(
+				sphere['cx'], sphere['cy'],	sphere['cz'],
+				sphere['r'], sphere['r'], round(sphere['r'] / zscale),
+				fnorm, False)
+		channelImages.append(ImagePlus("Rendering C" + "%i" % (i + 1), objectImage.getStack()))
 
-imageO = RGBStackMerge.mergeChannels(channelImages, False)
+	imageO = RGBStackMerge.mergeChannels(channelImages, False)
+else:
+	
+	for i in range(0, channels):
+		imageProcessor = ShortProcessor(sx*4, sy*4)
+		imageStack = ImageStack(sx*4, sy*4)
+		for sphere in spheres:
+			fnorm = int(round((sphere['f'][i] - fmin[i]) / (fmax[i] - fmin[i]) * 65536.0))
+			x = sphere['cx'] * 4 - sphere['r']
+			y = sphere['cy'] * 4 - sphere['r']
+			d = sphere['r'] * 2
+			imageProcessor.setValue(fnorm)
+			imageProcessor.fillOval(x, y, d, d)
+		imageStack.addSlice(imageProcessor)
+		channelImages.append(ImagePlus("Rendering C" + "%i" % (i + 1), imageStack))
+		
+	imageO = RGBStackMerge.mergeChannels(channelImages, False)
 
 # Save result
 saver = FileSaver(imageO)
