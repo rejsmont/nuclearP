@@ -1,7 +1,7 @@
-import sys
-import os
+#! /usr/bin/fiji
 
-### Import argparse to parse command-line arguments
+### Python imports
+import os
 import argparse
 
 ### These imports are required in development environment
@@ -18,7 +18,7 @@ reload(Analysis)
 
 ### Regular imports
 from ij import IJ, ImagePlus
-from ij.io import DirectoryChooser, OpenDialog, FileSaver
+from ij.io import DirectoryChooser, OpenDialog
 from ij.plugin import ChannelSplitter
 from loci.plugins import BF
 from Options import getOptions, getDefaults

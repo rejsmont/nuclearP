@@ -1,7 +1,5 @@
-import sys
-import os
+#! /usr/bin/fiji
 
-### Import argparse to parse command-line arguments
 import argparse
 
 ### These are required in development environment
@@ -13,18 +11,15 @@ import Analysis
 reload(Analysis)
 
 ### Regular imports
-from threading import Thread, currentThread
 from ij import IJ
-from ij.io import DirectoryChooser, OpenDialog, FileSaver
 from ij.measure import ResultsTable
 from ij.plugin import Duplicator
 from loci.plugins import BF
-from Options import getOptions, getDefaults as getBaseDefaults
+from Options import getDefaults as getBaseDefaults
 from Segmentation import Segmentator
 from Analysis import Analyzer
 from mcib3d.image3d import ImageInt
-from java.util.concurrent.atomic import AtomicInteger
-from java.lang import Runtime, InterruptedException
+
 
 def runSimulation(options, image):
 	

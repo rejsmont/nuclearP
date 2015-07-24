@@ -1,12 +1,10 @@
-import sys
-import os
-import csv
-import math
+#! /usr/bin/fiji
 
-### Import argparse to parse command-line arguments
+### Python imports
+import csv
 import argparse
 
-### Regular imports
+### ImageJ / Jython imports
 from ij import IJ, ImagePlus, ImageStack
 from ij.io import FileSaver
 from ij.plugin import RGBStackMerge
@@ -17,23 +15,23 @@ from mcib3d.geom import ObjectCreator3D
 
 # Parse command line arguments
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser(description="Nuclear Segmentation with Fiji")
-	parser.add_argument('--input-csv')
-	parser.add_argument('--input-image')
-	parser.add_argument('--output-image')
-	parser.add_argument('--flat')
-	
-	args = parser.parse_args()
-	referenceFile = args.input_image
-	objectListFile = args.input_csv
-	outputFile = args.output_image
-	if args.flat:
-		if str(args.flat).upper() == "TRUE":
-			flat = True
-		else:
-			flat = False
+    parser = argparse.ArgumentParser(description="Nuclear Segmentation with Fiji")
+    parser.add_argument('--input-csv')
+    parser.add_argument('--input-image')
+    parser.add_argument('--output-image')
+    parser.add_argument('--flat')
+
+    args = parser.parse_args()
+    referenceFile = args.input_image
+    objectListFile = args.input_csv
+    outputFile = args.output_image
+    if args.flat:
+        if str(args.flat).upper() == "TRUE":
+            flat = True
 	else:
-		flat = False
+            flat = False
+    else:
+	flat = False
 
 print referenceFile
 print objectListFile
@@ -41,10 +39,10 @@ print outputFile
 
 # Open source image
 try:
-	image = IJ.openImage(referenceFile)
+    image = IJ.openImage(referenceFile)
 except Exception:
-	images = BF.openImagePlus(referenceFile)
-	image = images[0]
+    images = BF.openImagePlus(referenceFile)
+    image = images[0]
 	
 calibration = image.getCalibration()
 zscale = calibration.getZ(1) / calibration.getX(1)
