@@ -65,7 +65,7 @@ for index, row in enumerate(objects):
 		cx = int(round(float(row[1])))
 		cy = int(round(float(row[2])))
 		cz = int(round(float(row[3])))
-		r =  int(round((float(row[4] * 0.75 * (1/math.pi)) * zscale) ** (1.0/3.0)))
+		r =  int(round(((float(row[4]) * 0.75 * (1/math.pi)) ** (1.0/3.0)) * zscale))
 		f = []
 		
 		for i in range(0, channels):
