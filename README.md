@@ -36,7 +36,7 @@ The above restriction will be removed once our paper is accepted.
 
 To run the segmentation script from console using default options follow this example:
 ```
-fiji --headless ./NuclearSegmentation.py \
+fiji --headless ./src/NuclearSegmentation.py \
     --input-dir=./examples/input/ \
     --class-model=./examples/nuclei-test.model \
     --deconv-psf=./examples/psf-test.tif \
@@ -45,7 +45,7 @@ fiji --headless ./NuclearSegmentation.py \
 
 You can set the following segmentation parameters:
 ```
-fiji --headless ./NuclearSegmentation.py \
+fiji --headless ./src/NuclearSegmentation.py \
     --input-dir=../Input \
     --output-dir=../Output \
     --img-channel=1 \
@@ -67,7 +67,7 @@ fiji --headless ./NuclearSegmentation.py \
 
 To generate a pseudoimage from the raw image and the object list CSV:
 ```
-fiji --headless ./Plotter.py \
+fiji --headless ./src/Plotter.py \
     --input-csv=../Output/Results/OBJ_mCh-disc-1.csv
     --input-image=../Input/mCh-disc-1.tif
     --output-image=../Output/Pseudoimage/mCh-disc-1.tif
@@ -77,7 +77,7 @@ fiji --headless ./Plotter.py \
 
 To generate parameters file for optimizer:
 ```
-fiji --headless ./SegmentationOptimizer.py \
+fiji --headless ./src/SegmentationOptimizer.py \
     --params-out='parameters.csv' \
     --gauss-xy-min=0 \
     --gauss-xy-max=5.2 \
@@ -94,7 +94,7 @@ fiji --headless ./SegmentationOptimizer.py \
 
 To run simulation for single paramater set:
 ```
-fiji --headless ./SegmentationOptimizer.py \
+fiji --headless ./src/SegmentationOptimizer.py \
     --one-shot=true \
     --gauss-xy=2 \
     --gauss-z=1 \
@@ -107,7 +107,7 @@ fiji --headless ./SegmentationOptimizer.py \
 
 To run simulations for the whole paramater array:
 ```
-fiji --headless ./SegmentationOptimizer.py \
+fiji --headless ./src/SegmentationOptimizer.py \
     --gauss-xy-min=0 \
     --gauss-xy-max=3 \
     --gauss-xy-step=1 \
@@ -127,7 +127,7 @@ fiji --headless ./SegmentationOptimizer.py \
 ### High performance computing
 
 These are two PBS scripts for use on clusters/supercomputers in the
-`nuclearP/hpc-scripts/` subdirectory. `optimizer-worker.pbs` is an example
+`nuclearP/src/hpc-scripts/` subdirectory. `optimizer-worker.pbs` is an example
 job for optimizing segmentation parameters. `fullscale-worker.pbs` is an
 example of segmentation job. These scripts are using
 [worker framework](https://github.com/gjbex/worker) and should be

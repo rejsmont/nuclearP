@@ -36,32 +36,19 @@ for index, line in enumerate(reader):
         voxel['coords'] = numpy.array([[line[1], line[2], line[3]]])
         voxel['volume'] = line[4]
         voxel['values'] = numpy.array([[line[5], line[7]]])
-        voxel['neighs'] = numpy.full((3, 3), -1, dtype=int)
-        voxel['neighs'][1, 1] = index - 1
         voxel['visited'] = False
         voxels.append(voxel)
 
 ncount = len(voxels)
 
 # Create coordinate matrix and object list
-matrix = numpy.empty([len(voxels), 2])
-list = numpy.arange(len(voxels))
-
-for index in range(0, len(voxels)):
+matrix = numpy.empty([ncount, 2])
+for index in range(0, ncount):
     matrix[index] = voxels[index]['coords'][0, 0:2:1]
 
 # Compute distances
 tree = scipy.spatial.cKDTree(matrix)
 distances, neighbors = tree.query(matrix, k=25)
-
-worklist = copy.deepcopy(list)
-numpy.random.shuffle(worklist)
-voxlist = copy.deepcopy(voxels)
-
-target = numpy.full((int(width), int(height)), -1, dtype=int)
-
-
-### Get initial estimate matrix by filling the neighborhood with nearest neighbors
 
 def fill_neighborhood(x, y, item, voxels, target, matrix):
     target[x, y] = item
@@ -82,37 +69,57 @@ def fill_neighborhood(x, y, item, voxels, target, matrix):
         if target[x + Cx, y + Cy] == -1:
             fill_neighborhood(x + Cx, y + Cy, neigh, voxels, target, matrix)
 
-sys.setrecursionlimit(100000)
-fill_neighborhood(int(width/2), int(height/2), worklist[0], voxlist, target, matrix)
+for iterations in range(0, 1):
+    
+    list = numpy.arange(ncount)
+    voxlist = copy.deepcopy(voxels)
+    target = numpy.full((int(width), int(height)), -1, dtype=int)
+    
+    ### Get initial estimate matrix by filling the neighborhood with nearest neighbors
+    sys.setrecursionlimit(100000)
+    seed = numpy.random.randint(0, ncount)
+    fill_neighborhood(int(width/2), int(height/2), list[seed], voxlist, target, matrix)
 
-minx = width
-miny = height
-maxx = 0
-maxy = 0
-
-for x in range(0, 1024):
-    for y in range(0, 1024):
-        if target[x, y] != -1:
-            if x < minx:
-                minx = x
-            if x > maxx:
-                maxx = x
-            if y < miny:
-                miny = y
-            if y > maxy:
-                maxy = y
-
-rwidth = maxx - minx + 1
-rheight = maxy - miny + 1
-
-rmatrix = numpy.full((rwidth, rheight), -1, dtype=int)
-
-nplaced = 0
-
-for rx in range(minx, maxx+1):
-    for ry in range(miny, maxy+1):
-        rmatrix[rx - minx, ry - miny] = target[rx, ry]
-        if target[rx, ry] != -1:
-            nplaced = nplaced + 1
-
-print("The matrix contains %i out of %i nuclei" % (nplaced, ncount))
+    ### Check which items have been already placed
+    placed = numpy.empty(0, dtype=int)
+        
+    for x in range(0, width):
+        for y in range(0, height):
+            nucleus = target[x, y]
+            if nucleus != -1:
+                placed = numpy.append(placed, nucleus)
+                
+    missing = numpy.delete(list, placed)
+    numpy.random.shuffle(missing)
+    
+    for i in range(0, len(missing)):
+        print(missing[i])
+    
+#    minx = width
+#    miny = height
+#    maxx = 0
+#    maxy = 0
+#
+#    for x in range(0, 1024):
+#        for y in range(0, 1024):
+#            if target[x, y] != -1:
+#                if x < minx:
+#                    minx = x
+#                if x > maxx:
+#                    maxx = x
+#                if y < miny:
+#                    miny = y
+#                if y > maxy:
+#                    maxy = y
+#
+#    rwidth = maxx - minx + 1
+#    rheight = maxy - miny + 1
+#
+#    rmatrix = numpy.full((rwidth, rheight), -1, dtype=int)
+#
+#
+#    for rx in range(minx, maxx+1):
+#        for ry in range(miny, maxy+1):
+#            rmatrix[rx - minx, ry - miny] = target[rx, ry]
+#
+#    print("The matrix contains %i out of %i nuclei" % (nplaced, ncount))
