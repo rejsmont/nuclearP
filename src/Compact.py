@@ -123,8 +123,29 @@ class NuclearCluster():
     def place(self, items):
         for item in items:
             W = self.anchor(item)
-            print(self.best_axis(W[0], W[1]))
-            
+            T = self.best_axis(W[0], W[1])
+            if T[0] != 0:
+                self.insert(item, self.target[:, W[1]], W[0], T[0])
+            if T[1] != 0:
+                self.insert(item, self.target[:, W[0]], W[1], T[1])
+                
+    def insert(self, value, vector, position, shift):
+        shape = vector.shape
+        result = numpy.full((shape[0], 1), -1, dtype=int)
+        start = 0
+        
+        if shift < 0:
+            for x in range(start, position + shift - 1):
+                print(vector[x], end="")
+            start = position + shift + 1
+        
+        for x in range(start, position):
+            print(vector[x], end="")
+                    
+        for x in range(position, shape[0]):
+            pass
+        
+        pass
     
     ### Find a place for an item in the matrix ###
     def anchor(self, item):
