@@ -119,33 +119,53 @@ class NuclearCluster():
         return missing
     
     
-    
+    ### Plase missing items into target matrix
     def place(self, items):
         for item in items:
             W = self.anchor(item)
             T = self.best_axis(W[0], W[1])
+            
             if T[0] != 0:
-                self.insert(item, self.target[:, W[1]], W[0], T[0])
+                self.target[:, W[1]] = \
+                    self.insert(item, self.target[:, W[1]], W[0], T[0])
             if T[1] != 0:
-                self.insert(item, self.target[:, W[0]], W[1], T[1])
-                
+                self.target[W[0], :] = \
+                    self.insert(item, self.target[W[0], :], W[1], T[1])
+    
+    
+    ### Insert value into a specified position in vector
     def insert(self, value, vector, position, shift):
         shape = vector.shape
-        result = numpy.full((shape[0], 1), -1, dtype=int)
+        result = numpy.full((shape[0]), -1, dtype=int)
         start = 0
+        current = 0  
         
         if shift < 0:
-            for x in range(start, position + shift - 1):
-                print(vector[x], end="")
+            for x in range(start, position + shift):
+                result[current] = vector[x]
+                current = current + 1
             start = position + shift + 1
         
         for x in range(start, position):
-            print(vector[x], end="")
-                    
-        for x in range(position, shape[0]):
-            pass
+            result[current] = vector[x]
+            current = current + 1
         
-        pass
+        result[current] = value
+        current = current + 1
+        start = position
+        
+        if shift > 0:
+            for x in range(start, position + shift):
+                result[current] = vector[x]
+                current = current + 1
+            start = position + shift + 1
+        
+        for x in range(start, shape[0]):
+            result[current] = vector[x]
+            current = current + 1
+        
+        return result
+
     
     ### Find a place for an item in the matrix ###
     def anchor(self, item):
@@ -162,7 +182,7 @@ class NuclearCluster():
 
         x = nx + Cx if nx != -1 else -1
         y = ny + Cy if ny != -1 else -1
-            
+        
         return numpy.array([x, y])
     
     
