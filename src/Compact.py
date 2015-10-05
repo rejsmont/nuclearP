@@ -6,6 +6,7 @@ from __future__ import print_function
 __author__ = "Radoslaw Kamil Ejsmont"
 __date__ = "$Jul 23, 2015 4:39:56 PM$"
 
+import os
 import sys
 import csv
 import copy
@@ -15,6 +16,7 @@ import numpy.linalg
 import numpy.random
 import threading
 import scipy.spatial
+import time
 
 # Parse command line arguments
 if __name__ == '__main__':
@@ -54,17 +56,38 @@ distances, neighbors = tree.query(matrix, k=maxneigh)
 
 sys.setrecursionlimit(100000)
 
+def nCPUs():
+    """
+    Detects the number of CPUs on a system.
+    http://python-3-patterns-idioms-test.readthedocs.org/en/latest/MachineDiscovery.html
+    """
+    # Linux, Unix and MacOS:
+    if hasattr(os, "sysconf"):
+        if os.sysconf_names.has_key("SC_NPROCESSORS_ONLN"):
+            # Linux & Unix:
+            ncpus = os.sysconf("SC_NPROCESSORS_ONLN")
+            if isinstance(ncpus, int) and ncpus > 0:
+                return ncpus
+        else: # OSX:
+            return int(os.popen2("sysctl -n hw.ncpu")[1].read())
+    # Windows:
+    if os.environ.has_key("NUMBER_OF_PROCESSORS"):
+            ncpus = int(os.environ["NUMBER_OF_PROCESSORS"]);
+            if ncpus > 0:
+                return ncpus
+    return 1
+
 class NuclearCluster():
     
     ### Init data structures ###
     def __init__(self, matrix, distances, neighbors, width, height):
         self.matrix = matrix
         self.distances = distances
-        self.neighbors = neighbors        
+        self.neighbors = neighbors
         self.n_items = self.neighbors.shape[0]
         self.max_neigh = self.neighbors.shape[1]
         self.width = width
-        self.height = height        
+        self.height = height
         self.target = numpy.full( \
             (self.width, self.height), -1, dtype=int)
         self.coordinates = numpy.full((self.n_items, 2), -1, dtype=int)
@@ -274,11 +297,55 @@ class NuclearCluster():
         self.place(self.missing())
 
 
-cluster = NuclearCluster(matrix, distances, neighbors, width, height)
-cluster.fill()
-score = cluster.score()
-result = cluster.compact()
+class ClusteringWorker(threading.Thread):
+    
+    best_score = 0
+    iterations = 0
+    result = None
+    clusterLock = threading.Lock()
+    
+    def __init__(self, matrix, distances, neighbors, width, height, maxit, id):
+        threading.Thread.__init__(self)
+        self.matrix = matrix
+        self.distances = distances
+        self.neighbors = neighbors
+        self.width = width
+        self.height = height
+        self.maxit = maxit
+        self.id = id
+        
+    def run(self):
+        while ClusteringWorker.iterations < self.maxit:
+            ClusteringWorker.clusterLock.acquire()
+            ClusteringWorker.iterations = ClusteringWorker.iterations + 1
+            ClusteringWorker.clusterLock.release()
+            cluster = NuclearCluster(matrix, distances, neighbors, width, height)
+            cluster.fill()
+            score = cluster.score()
+            #score = numpy.random.randint(0, 20)
+            #for i in range(0, score):
+            #    time.sleep(1)
+            ClusteringWorker.clusterLock.acquire()
+            print("Thread %i score: %f" % (self.id, score))
+            if score < ClusteringWorker.best_score or ClusteringWorker.best_score == 0:
+                ClusteringWorker.best_score = score
+                ClusteringWorker.result = cluster
+                print("New best score: %f" % (score))
+            ClusteringWorker.clusterLock.release()
+                
+threads = []
 
-print("Nuclei: %i", cluster.n_items)
-print("Score: %f", score)
-print(result.shape)
+for i in range(0, nCPUs() - 1):
+    thread = ClusteringWorker(matrix, distances, neighbors, width, height, 20, i)
+    thread.start()
+    threads.append(thread)
+
+for t in threads:
+    t.join()
+
+result = ClusteringWorker.result
+
+if result != None:
+    print("Success !!!")
+    print("Final score is: %f" % result.score)
+
