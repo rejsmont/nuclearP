@@ -94,6 +94,14 @@ class NuclearCluster():
         self.visited = numpy.zeros((self.n_items, 1), dtype=bool)
 
 
+    def ndistance(self, item, neigh):
+        A = self.matrix[item]
+        B = self.matrix[neigh]
+        BA = B - A
+        C = numpy.linalg.norm(BA)
+        
+        return C
+
     ### Calculate relative position of the neighbor ###
     def nposition(self, item, neigh):
         A = self.matrix[item]
@@ -276,15 +284,8 @@ class NuclearCluster():
                         neigh = self.target[x, y]
                         if neigh == -1:
                             score = score + 50
-                            continue
-                        npos = -1
-                        for n in range (0, self.max_neigh):
-                            if (neigh == self.neighbors[item, n]):
-                                score = score + self.distances[item, n]
-                                npos = n
-                                break
-                        if npos == -1:
-                            score = score + 100
+                        else:
+                            score = score + self.ndistance(item, neigh)
         
         return score
                                 
@@ -347,5 +348,5 @@ result = ClusteringWorker.result
 
 if result != None:
     print("Success !!!")
-    print("Final score is: %f" % result.score)
+    print("Final score is: %f" % result.score())
 
