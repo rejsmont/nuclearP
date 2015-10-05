@@ -94,6 +94,7 @@ class NuclearCluster():
         self.visited = numpy.zeros((self.n_items, 1), dtype=bool)
 
 
+    ### Calculate distance to the neighbor ###
     def ndistance(self, item, neigh):
         A = self.matrix[item]
         B = self.matrix[neigh]
@@ -288,7 +289,6 @@ class NuclearCluster():
                             score = score + self.ndistance(item, neigh)
         
         return score
-                                
     
     
     ### Initiate neighborhood fill sequence ###
@@ -303,7 +303,9 @@ class ClusteringWorker(threading.Thread):
     best_score = 0
     iterations = 0
     result = None
-    clusterLock = threading.Lock()
+    iterationsLock = threading.Lock()
+    scoreLock = threading.Lock()
+    
     
     def __init__(self, matrix, distances, neighbors, width, height, maxit, id):
         threading.Thread.__init__(self)
@@ -317,22 +319,19 @@ class ClusteringWorker(threading.Thread):
         
     def run(self):
         while ClusteringWorker.iterations < self.maxit:
-            ClusteringWorker.clusterLock.acquire()
+            ClusteringWorker.iterationsLock.acquire()
             ClusteringWorker.iterations = ClusteringWorker.iterations + 1
-            ClusteringWorker.clusterLock.release()
+            ClusteringWorker.iterationsLock.release()
             cluster = NuclearCluster(matrix, distances, neighbors, width, height)
             cluster.fill()
             score = cluster.score()
-            #score = numpy.random.randint(0, 20)
-            #for i in range(0, score):
-            #    time.sleep(1)
-            ClusteringWorker.clusterLock.acquire()
             print("Thread %i score: %f" % (self.id, score))
+            ClusteringWorker.scoreLock.acquire()
             if score < ClusteringWorker.best_score or ClusteringWorker.best_score == 0:
                 ClusteringWorker.best_score = score
                 ClusteringWorker.result = cluster
                 print("New best score: %f" % (score))
-            ClusteringWorker.clusterLock.release()
+            ClusteringWorker.scoreLock.release()
                 
 threads = []
 
@@ -349,4 +348,3 @@ result = ClusteringWorker.result
 if result != None:
     print("Success !!!")
     print("Final score is: %f" % result.score())
-
