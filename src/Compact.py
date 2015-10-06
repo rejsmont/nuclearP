@@ -299,9 +299,7 @@ class NuclearCluster():
     ### Initiate neighborhood fill sequence ###
     def fill(self):
         seed = numpy.random.randint(0, self.n_items)
-        print("Starting nFill")
         self.nfill(int(self.width/2), int(self.height/2), seed)
-        print("nFill done")
         self.place(self.missing())
 
 
