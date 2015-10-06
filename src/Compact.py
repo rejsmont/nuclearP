@@ -9,24 +9,24 @@ __date__ = "$Jul 23, 2015 4:39:56 PM$"
 import os
 import sys
 import csv
-import copy
 import argparse
 import numpy
 import numpy.linalg
 import numpy.random
 import threading
 import scipy.spatial
-import time
 
 # Parse command line arguments
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Nuclear Segmentation with Fiji")
     parser.add_argument('--input-csv')
+    parser.add_argument('--output-csv')
     parser.add_argument('--width')
     parser.add_argument('--height')
     
     args = parser.parse_args()
     objectListFile = args.input_csv
+    outputFile = args.output_csv
     width = 1024 #args.width
     height = 1024 #args.height
     maxneigh = 121
@@ -37,10 +37,10 @@ voxels = []
 for index, line in enumerate(reader):
     if index > 0:
         voxel = {}
-        voxel['coords'] = numpy.array([[line[1], line[2], line[3]]])
+        voxel['coords'] = numpy.array([line[1], line[2], line[3]])
         voxel['newcoords'] = numpy.full((1, 2), -1)
         voxel['volume'] = line[4]
-        voxel['values'] = numpy.array([[line[5], line[7]]])
+        voxel['values'] = numpy.array([line[5], line[7]])
         voxels.append(voxel)
 
 ncount = len(voxels)
@@ -48,13 +48,13 @@ ncount = len(voxels)
 # Create coordinate matrix and object list
 matrix = numpy.empty([ncount, 2])
 for index in range(0, ncount):
-    matrix[index] = voxels[index]['coords'][0, 0:2:1]
+    matrix[index] = voxels[index]['coords'][0:2:1]
 
 # Compute distances
 tree = scipy.spatial.cKDTree(matrix)
 distances, neighbors = tree.query(matrix, k=maxneigh)
 
-sys.setrecursionlimit(100000)
+sys.setrecursionlimit(20000)
 
 def nCPUs():
     """
@@ -91,6 +91,7 @@ class NuclearCluster():
         self.target = numpy.full( \
             (self.width, self.height), -1, dtype=int)
         self.coordinates = numpy.full((self.n_items, 2), -1, dtype=int)
+        self.ccoords = numpy.full((self.n_items, 2), -1, dtype=int)
         self.visited = numpy.zeros((self.n_items, 1), dtype=bool)
 
 
@@ -266,8 +267,12 @@ class NuclearCluster():
 
         for rx in range(minx, maxx+1):
             for ry in range(miny, maxy+1):
+                item = self.target[rx, ry]
                 rmatrix[rx - minx, ry - miny] = self.target[rx, ry]
-                
+                if item != -1:
+                    self.ccoords[item, 0] = rx - minx
+                    self.ccoords[item, 1] = ry - miny
+        
         return rmatrix
     
     
@@ -294,7 +299,9 @@ class NuclearCluster():
     ### Initiate neighborhood fill sequence ###
     def fill(self):
         seed = numpy.random.randint(0, self.n_items)
+        print("Starting nFill")
         self.nfill(int(self.width/2), int(self.height/2), seed)
+        print("nFill done")
         self.place(self.missing())
 
 
@@ -335,8 +342,8 @@ class ClusteringWorker(threading.Thread):
                 
 threads = []
 
-for i in range(0, nCPUs() - 1):
-    thread = ClusteringWorker(matrix, distances, neighbors, width, height, 20, i)
+for i in range(0, nCPUs()):
+    thread = ClusteringWorker(matrix, distances, neighbors, width, height, 100, i)
     thread.start()
     threads.append(thread)
 
@@ -344,7 +351,18 @@ for t in threads:
     t.join()
 
 result = ClusteringWorker.result
+mres = result.compact()
 
-if result != None:
-    print("Success !!!")
-    print("Final score is: %f" % result.score())
+with open(outputFile, 'wb') as csvfile:
+    csvwriter = csv.writer(csvfile)
+    csvwriter.writerow(["Particle","cx","cy","cz","Volume",
+        "Integral 0","Mean 0","Integral 1","Mean 1"])
+    for item in range(0, result.n_items):
+         csvwriter.writerow([item + 1, result.ccoords[item, 0], \
+            result.ccoords[item, 1], 0, voxels[item]['volume'], \
+            voxels[item]['values'][0], \
+            float(voxels[item]['values'][0]) / float(voxels[item]['volume']), \
+            voxels[item]['values'][1], \
+            float(voxels[item]['values'][1]) / float(voxels[item]['volume'])])
+    
+print("Done! Result array size is %i x %i !" % (mres.shape[0], mres.shape[1]))
