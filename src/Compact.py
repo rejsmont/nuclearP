@@ -278,20 +278,24 @@ class NuclearCluster():
     
     ### Score target matrix
     def score(self):
-        score = 0
-        for item in range(0, self.n_items):
-            ix = self.coordinates[item, 0]
-            iy = self.coordinates[item, 1]
-            if ix != -1 and iy != -1:
-                for x in range(ix - 1, ix + 2):
-                    for y in range(iy - 1, iy + 2):
-                        if x == 1 and y == 1:
-                            continue
-                        neigh = self.target[x, y]
-                        if neigh == -1:
-                            score = score + 50
-                        else:
-                            score = score + self.ndistance(item, neigh)
+        
+#        score = 0
+#        for item in range(0, self.n_items):
+#            ix = self.coordinates[item, 0]
+#            iy = self.coordinates[item, 1]
+#            if ix != -1 and iy != -1:
+#                for x in range(ix - 1, ix + 2):
+#                    for y in range(iy - 1, iy + 2):
+#                        if x == 1 and y == 1:
+#                            continue
+#                        neigh = self.target[x, y]
+#                        if neigh == -1:
+#                            score = score + 50
+#                        else:
+#                            score = score + self.ndistance(item, neigh)
+#        
+        mres = self.compact()
+        score = mres.shape[0] * mres.shape[1]
         
         return score
     
