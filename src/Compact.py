@@ -10,10 +10,11 @@ import os
 import sys
 import csv
 import argparse
+import collections
+import threading
 import numpy
 import numpy.linalg
 import numpy.random
-import threading
 import scipy.spatial
 
 # Parse command line arguments
@@ -120,7 +121,7 @@ class NuclearCluster():
         self.coordinates[item, 0] = x
         self.coordinates[item, 1] = y
         self.visited[item] = True
-                
+        
         for n_no in range(1, self.max_neigh):
             neigh = self.neighbors[item, n_no]
             if neigh >= self.n_items:
@@ -137,6 +138,37 @@ class NuclearCluster():
             
             if self.target[x + Cx, y + Cy] == -1:
                 self.nfill(x + Cx, y + Cy, neigh)
+    
+    
+    ### Iterative version of nfill ###
+    def nfill_s(self, x, y, item):
+        value = (x, y, item)
+        stack = collections.deque(value)
+        
+        while stack:
+            (x, y, item) = stack.pop()
+            self.target[x, y] = item
+            self.coordinates[item, 0] = x
+            self.coordinates[item, 1] = y
+            self.visited[item] = True
+
+            for n_no in range(1, self.max_neigh):
+                neigh = self.neighbors[item, n_no]
+                if neigh >= self.n_items:
+                    break
+                if self.visited[neigh]:
+                    continue
+
+                C = self.nposition(item, neigh)
+                Cx = C[0]
+                Cy = C[1]
+
+                if Cx >= self.width or Cy > self.height:
+                    continue
+
+                if self.target[x + Cx, y + Cy] == -1:
+                    value = (x + Cx, y + Cy, neigh)
+                    stack.append(value)
 
 
     ### Find items that have not been placed ###
@@ -278,22 +310,6 @@ class NuclearCluster():
     
     ### Score target matrix
     def score(self):
-        
-#        score = 0
-#        for item in range(0, self.n_items):
-#            ix = self.coordinates[item, 0]
-#            iy = self.coordinates[item, 1]
-#            if ix != -1 and iy != -1:
-#                for x in range(ix - 1, ix + 2):
-#                    for y in range(iy - 1, iy + 2):
-#                        if x == 1 and y == 1:
-#                            continue
-#                        neigh = self.target[x, y]
-#                        if neigh == -1:
-#                            score = score + 50
-#                        else:
-#                            score = score + self.ndistance(item, neigh)
-#        
         mres = self.compact()
         score = mres.shape[0] * mres.shape[1]
         
@@ -341,7 +357,7 @@ class ClusteringWorker(threading.Thread):
                 ClusteringWorker.result = cluster
                 print("New best score: %f" % (score))
             ClusteringWorker.scoreLock.release()
-                
+
 threads = []
 
 for i in range(0, nCPUs()):
