@@ -142,16 +142,19 @@ class NuclearCluster():
     
     ### Iterative version of nfill ###
     def nfill_s(self, x, y, item):
+        
+        stack = collections.deque()
+
+        self.target[x, y] = item
+        self.coordinates[item, 0] = x
+        self.coordinates[item, 1] = y
+        self.visited[item] = True
         value = (x, y, item)
-        stack = collections.deque(value)
+        stack.append(value)
         
         while stack:
             (x, y, item) = stack.pop()
-            self.target[x, y] = item
-            self.coordinates[item, 0] = x
-            self.coordinates[item, 1] = y
-            self.visited[item] = True
-
+            
             for n_no in range(1, self.max_neigh):
                 neigh = self.neighbors[item, n_no]
                 if neigh >= self.n_items:
@@ -167,7 +170,14 @@ class NuclearCluster():
                     continue
 
                 if self.target[x + Cx, y + Cy] == -1:
-                    value = (x + Cx, y + Cy, neigh)
+                    x = x + Cx
+                    y = y + Cy
+                    item = neigh
+                    self.target[x, y] = item
+                    self.coordinates[item, 0] = x
+                    self.coordinates[item, 1] = y
+                    self.visited[item] = True
+                    value = (x, y, item)
                     stack.append(value)
 
 
@@ -310,8 +320,21 @@ class NuclearCluster():
     
     ### Score target matrix
     def score(self):
-        mres = self.compact()
-        score = mres.shape[0] * mres.shape[1]
+        
+        score = 0
+        for item in range(0, self.n_items):
+            ix = self.coordinates[item, 0]
+            iy = self.coordinates[item, 1]
+            if ix != -1 and iy != -1:
+                for x in range(ix - 1, ix + 2):
+                    for y in range(iy - 1, iy + 2):
+                        if x == 1 and y == 1:
+                            continue
+                        neigh = self.target[x, y]
+                        if neigh == -1:
+                            score = score + 50
+                        else:
+                            score = score + self.ndistance(item, neigh)
         
         return score
     
@@ -319,15 +342,17 @@ class NuclearCluster():
     ### Initiate neighborhood fill sequence ###
     def fill(self):
         seed = numpy.random.randint(0, self.n_items)
-        self.nfill(int(self.width/2), int(self.height/2), seed)
+        self.nfill_s(int(self.width/2), int(self.height/2), seed)
         self.place(self.missing())
 
 
 class ClusteringWorker(threading.Thread):
     
     best_score = 0
+    best_size = 0
     iterations = 0
     result = None
+    result_s = None
     iterationsLock = threading.Lock()
     scoreLock = threading.Lock()
     
@@ -350,17 +375,27 @@ class ClusteringWorker(threading.Thread):
             cluster = NuclearCluster(matrix, distances, neighbors, width, height)
             cluster.fill()
             score = cluster.score()
-            print("Thread %i score: %f" % (self.id, score))
+            rmatrix = cluster.compact()
+            size = rmatrix.shape[0] * rmatrix.shape[1]
+            print("Thread %i score: %f, size %i" % (self.id, score, size))
             ClusteringWorker.scoreLock.acquire()
             if score < ClusteringWorker.best_score or ClusteringWorker.best_score == 0:
                 ClusteringWorker.best_score = score
                 ClusteringWorker.result = cluster
                 print("New best score: %f" % (score))
+            if size < ClusteringWorker.best_size or ClusteringWorker.best_size == 0:
+                ClusteringWorker.best_size = size
+                ClusteringWorker.result_s = cluster
+                print("New best size: %i" % (size))
             ClusteringWorker.scoreLock.release()
 
 threads = []
 
-for i in range(0, nCPUs()):
+maxthreads = nCPUs() - 1
+if maxthreads < 1:
+    maxthreads = 1
+
+for i in range(0, maxthreads):
     thread = ClusteringWorker(matrix, distances, neighbors, width, height, 100, i)
     thread.start()
     threads.append(thread)
@@ -368,19 +403,19 @@ for i in range(0, nCPUs()):
 for t in threads:
     t.join()
 
-result = ClusteringWorker.result
-mres = result.compact()
-
-with open(outputFile, 'wb') as csvfile:
-    csvwriter = csv.writer(csvfile)
-    csvwriter.writerow(["Particle","cx","cy","cz","Volume",
-        "Integral 0","Mean 0","Integral 1","Mean 1"])
-    for item in range(0, result.n_items):
-         csvwriter.writerow([item + 1, result.ccoords[item, 0], \
-            result.ccoords[item, 1], 0, voxels[item]['volume'], \
-            voxels[item]['values'][0], \
-            float(voxels[item]['values'][0]) / float(voxels[item]['volume']), \
-            voxels[item]['values'][1], \
-            float(voxels[item]['values'][1]) / float(voxels[item]['volume'])])
-    
-print("Done! Result array size is %i x %i !" % (mres.shape[0], mres.shape[1]))
+#result = ClusteringWorker.result
+#mres = result.compact()
+#
+#with open(outputFile, 'wb') as csvfile:
+#    csvwriter = csv.writer(csvfile)
+#    csvwriter.writerow(["Particle","cx","cy","cz","Volume",
+#        "Integral 0","Mean 0","Integral 1","Mean 1"])
+#    for item in range(0, result.n_items):
+#         csvwriter.writerow([item + 1, result.ccoords[item, 0], \
+#            result.ccoords[item, 1], 0, voxels[item]['volume'], \
+#            voxels[item]['values'][0], \
+#            float(voxels[item]['values'][0]) / float(voxels[item]['volume']), \
+#            voxels[item]['values'][1], \
+#            float(voxels[item]['values'][1]) / float(voxels[item]['volume'])])
+#    
+#print("Done! Result array size is %i x %i !" % (mres.shape[0], mres.shape[1]))
