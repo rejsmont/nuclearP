@@ -404,7 +404,7 @@ for t in threads:
 
 result = ClusteringWorker.result
 
-with open("score_" + outputFile, 'wb') as csvfile:
+with open(outputFile + ".score", 'wb') as csvfile:
     csvwriter = csv.writer(csvfile)
     csvwriter.writerow(["Particle","cx","cy","cz","Volume",
         "Integral 0","Mean 0","Integral 1","Mean 1"])
@@ -418,7 +418,7 @@ with open("score_" + outputFile, 'wb') as csvfile:
 
 result = ClusteringWorker.result_s
 
-with open("size_" + outputFile, 'wb') as csvfile:
+with open(outputFile + ".size", 'wb') as csvfile:
     csvwriter = csv.writer(csvfile)
     csvwriter.writerow(["Particle","cx","cy","cz","Volume",
         "Integral 0","Mean 0","Integral 1","Mean 1"])
