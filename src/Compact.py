@@ -320,7 +320,6 @@ class NuclearCluster():
     
     ### Score target matrix
     def score(self):
-        
         score = 0
         for item in range(0, self.n_items):
             ix = self.coordinates[item, 0]
@@ -396,26 +395,37 @@ if maxthreads < 1:
     maxthreads = 1
 
 for i in range(0, maxthreads):
-    thread = ClusteringWorker(matrix, distances, neighbors, width, height, 100, i)
+    thread = ClusteringWorker(matrix, distances, neighbors, width, height, 10, i)
     thread.start()
     threads.append(thread)
 
 for t in threads:
     t.join()
 
-#result = ClusteringWorker.result
-#mres = result.compact()
-#
-#with open(outputFile, 'wb') as csvfile:
-#    csvwriter = csv.writer(csvfile)
-#    csvwriter.writerow(["Particle","cx","cy","cz","Volume",
-#        "Integral 0","Mean 0","Integral 1","Mean 1"])
-#    for item in range(0, result.n_items):
-#         csvwriter.writerow([item + 1, result.ccoords[item, 0], \
-#            result.ccoords[item, 1], 0, voxels[item]['volume'], \
-#            voxels[item]['values'][0], \
-#            float(voxels[item]['values'][0]) / float(voxels[item]['volume']), \
-#            voxels[item]['values'][1], \
-#            float(voxels[item]['values'][1]) / float(voxels[item]['volume'])])
-#    
-#print("Done! Result array size is %i x %i !" % (mres.shape[0], mres.shape[1]))
+result = ClusteringWorker.result
+
+with open("score_" + outputFile, 'wb') as csvfile:
+    csvwriter = csv.writer(csvfile)
+    csvwriter.writerow(["Particle","cx","cy","cz","Volume",
+        "Integral 0","Mean 0","Integral 1","Mean 1"])
+    for item in range(0, result.n_items):
+         csvwriter.writerow([item + 1, result.ccoords[item, 0], \
+            result.ccoords[item, 1], 0, voxels[item]['volume'], \
+            voxels[item]['values'][0], \
+            float(voxels[item]['values'][0]) / float(voxels[item]['volume']), \
+            voxels[item]['values'][1], \
+            float(voxels[item]['values'][1]) / float(voxels[item]['volume'])])
+
+result = ClusteringWorker.result_s
+
+with open("size_" + outputFile, 'wb') as csvfile:
+    csvwriter = csv.writer(csvfile)
+    csvwriter.writerow(["Particle","cx","cy","cz","Volume",
+        "Integral 0","Mean 0","Integral 1","Mean 1"])
+    for item in range(0, result.n_items):
+         csvwriter.writerow([item + 1, result.ccoords[item, 0], \
+            result.ccoords[item, 1], 0, voxels[item]['volume'], \
+            voxels[item]['values'][0], \
+            float(voxels[item]['values'][0]) / float(voxels[item]['volume']), \
+            voxels[item]['values'][1], \
+            float(voxels[item]['values'][1]) / float(voxels[item]['volume'])])
