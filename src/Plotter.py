@@ -143,8 +143,8 @@ else:
                 sphere['cx'], sphere['cy'],	sphere['cz'],
 		sphere['r'], sphere['r'], round(sphere['r'] / zscale),
 		fnorm, False)
-            channelImages.append(ImagePlus("Rendering C" + "%i" % (i + 1), objectImage.getStack()))
-
+        channelImages.append(ImagePlus("Rendering C" + "%i" % (i + 1), objectImage.getStack()))
+        
     imageO = RGBStackMerge.mergeChannels(channelImages, False)
 
 # Save result
