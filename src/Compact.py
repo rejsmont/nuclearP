@@ -357,11 +357,7 @@ if __name__ == '__main__':
     distances, neighbors = tree.query(matrix, k=maxneigh)
 
     processes = []
-
-    maxprocs = multiprocessing.cpu_count() - 1
-    if maxprocs < 1:
-        maxprocs = 1
-
+    maxprocs = multiprocessing.cpu_count()
     iterator = multiprocessing.Value('i', 0)
     lock = multiprocessing.Lock()
 
