@@ -86,7 +86,7 @@ class NuclearCluster():
                 Cx = C[0]
                 Cy = C[1]
 
-                if Cx >= self.width or Cy > self.height:
+                if Cx >= self.width or Cy >= self.height or Cx < 0 or Cy < 0:
                     continue
 
                 if self.target[x + Cx, y + Cy] == -1:
@@ -115,7 +115,7 @@ class NuclearCluster():
         return missing
     
     
-    ### Plase missing items into target matrix
+    ### Place missing items into target matrix
     def __place(self, items):
         for item in items:
             W = self.__anchor(item)
@@ -374,7 +374,7 @@ if __name__ == '__main__':
 
     for i in range(0, maxprocs):
         process = ClusteringWorker(matrix, distances, neighbors,
-            width, height, 100, i, iterator, lock, results)
+            width, height, 20, i, iterator, lock, results)
         processes.append(process)
 
     for p in processes:
