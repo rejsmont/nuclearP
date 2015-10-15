@@ -247,7 +247,10 @@ class NuclearCluster():
             if ix != -1 and iy != -1:
                 for x in range(ix - 1, ix + 2):
                     for y in range(iy - 1, iy + 2):
-                        if x == 1 and y == 1:
+                        if x >= self.width or y >= self.height \
+                            or x < 0 or y < 0:
+                            continue
+                        if x == ix and y == iy:
                             continue
                         neigh = self.target[x, y]
                         if neigh == -1:
@@ -266,6 +269,7 @@ class NuclearCluster():
         self.score = self.__score()
         rmatrix = self.__compact()
         self.size = rmatrix.shape[0] * rmatrix.shape[1]
+        print(".", end="")
 
 
 class ClusteringWorker(multiprocessing.Process):
@@ -370,7 +374,7 @@ if __name__ == '__main__':
 
     for i in range(0, maxprocs):
         process = ClusteringWorker(matrix, distances, neighbors,
-            width, height, 1000, i, iterator, lock, results)
+            width, height, 100, i, iterator, lock, results)
         processes.append(process)
 
     for p in processes:
