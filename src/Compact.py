@@ -269,7 +269,6 @@ class NuclearCluster():
         self.score = self.__score()
         rmatrix = self.__compact()
         self.size = rmatrix.shape[0] * rmatrix.shape[1]
-        print(".", end="")
 
 
 class ClusteringWorker(multiprocessing.Process):
@@ -280,7 +279,7 @@ class ClusteringWorker(multiprocessing.Process):
     result_s = None
     
     def __init__(self, matrix, distances, neighbors, width, height,
-        maxit, id, iterator, lock, results):
+        maxit, id, iterator, results):
         multiprocessing.Process.__init__(self)
         self.matrix = matrix
         self.distances = distances
@@ -294,33 +293,34 @@ class ClusteringWorker(multiprocessing.Process):
         self.score_result = None
         self.size_result = None
         self.iterator = iterator
-        self.lock = lock
-        self.value = 0
         self.results = results
         
     def run(self):
         ### Some iteration variable
-        with self.lock:
-            self.value = self.iterator.value
-        while self.value < self.maxit:
-            with self.lock:
+        print("Thread %i initial value" % self.id)
+        while self.iterator.value < self.maxit:
+            with self.iterator.get_lock():
                 self.iterator.value += 1
+            print("Thread %i currently at %i" % (self.id, self.iterator.value))
             cluster = NuclearCluster(matrix, distances, neighbors, width, height)
             cluster.fill()
             if self.score_result == None or cluster.score < self.score_result.score:
                 self.score_result = cluster
             if self.size_result == None or cluster.size < self.size_result.size:
-                self.size_result = cluster
-            with self.lock:
-                self.value = self.iterator.value
+                self.size_result = cluster    
         
+        print("Thread %i saving score results" % self.id)
         result = self.score_result
         rtuple = (result.score, result.size, result.ccoords)
         self.results.put(rtuple)
         
+        print("Thread %i saving size results" % self.id)
         result = self.size_result
         rtuple = (result.score, result.size, result.ccoords)
         self.results.put(rtuple)
+        
+        print("Thread %i saved results" % self.id)
+        
 
 
 # Parse command line arguments
@@ -374,23 +374,28 @@ if __name__ == '__main__':
 
     for i in range(0, maxprocs):
         process = ClusteringWorker(matrix, distances, neighbors,
-            width, height, 20, i, iterator, lock, results)
+            width, height, 20, i, iterator, results)
         processes.append(process)
 
     for p in processes:
         p.start()
     
+    print("Waiting for jobs to finish")
+    
+    rlist = []
+    for i in range(maxprocs*2):
+        result = results.get()
+        rlist.append(result)
+        print("Retrieved result %i" % i+1)
+
+    print("Result queue empty")
+    
     for p in processes:
         p.join()
-        
-    rlist = []
-    while True:
-        try:
-            result = results.get_nowait()
-            rlist.append(result)
-        except Queue.Empty, e:
-            break
-        
+
+    print("All jobs have finished")
+
+    
     best_score = 0
     best_size = 0
     best_score_result = None
