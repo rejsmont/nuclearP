@@ -9,75 +9,18 @@ __date__ = "$Jul 23, 2015 4:39:56 PM$"
 import os
 import sys
 import csv
+import copy
 import argparse
 import collections
-import threading
+import multiprocessing
 import numpy
 import numpy.linalg
 import numpy.random
 import scipy.spatial
+import random
+import Queue
 
-# Parse command line arguments
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Nuclear Segmentation with Fiji")
-    parser.add_argument('--input-csv')
-    parser.add_argument('--output-csv')
-    parser.add_argument('--width')
-    parser.add_argument('--height')
-    
-    args = parser.parse_args()
-    objectListFile = args.input_csv
-    outputFile = args.output_csv
-    width = 1024 #args.width
-    height = 1024 #args.height
-    maxneigh = 121
-
-# Read objects
-reader = csv.reader(open(objectListFile,'rU'))
-voxels = []
-for index, line in enumerate(reader):
-    if index > 0:
-        voxel = {}
-        voxel['coords'] = numpy.array([line[1], line[2], line[3]])
-        voxel['newcoords'] = numpy.full((1, 2), -1)
-        voxel['volume'] = line[4]
-        voxel['values'] = numpy.array([line[5], line[7]])
-        voxels.append(voxel)
-
-ncount = len(voxels)
-
-# Create coordinate matrix and object list
-matrix = numpy.empty([ncount, 2])
-for index in range(0, ncount):
-    matrix[index] = voxels[index]['coords'][0:2:1]
-
-# Compute distances
-tree = scipy.spatial.cKDTree(matrix)
-distances, neighbors = tree.query(matrix, k=maxneigh)
-
-sys.setrecursionlimit(20000)
-
-def nCPUs():
-    """
-    Detects the number of CPUs on a system.
-    http://python-3-patterns-idioms-test.readthedocs.org/en/latest/MachineDiscovery.html
-    """
-    # Linux, Unix and MacOS:
-    if hasattr(os, "sysconf"):
-        if os.sysconf_names.has_key("SC_NPROCESSORS_ONLN"):
-            # Linux & Unix:
-            ncpus = os.sysconf("SC_NPROCESSORS_ONLN")
-            if isinstance(ncpus, int) and ncpus > 0:
-                return ncpus
-        else: # OSX:
-            return int(os.popen2("sysctl -n hw.ncpu")[1].read())
-    # Windows:
-    if os.environ.has_key("NUMBER_OF_PROCESSORS"):
-            ncpus = int(os.environ["NUMBER_OF_PROCESSORS"]);
-            if ncpus > 0:
-                return ncpus
-    return 1
-
+### Cluster nuclei using kD-tree approach
 class NuclearCluster():
     
     ### Init data structures ###
@@ -94,10 +37,13 @@ class NuclearCluster():
         self.coordinates = numpy.full((self.n_items, 2), -1, dtype=int)
         self.ccoords = numpy.full((self.n_items, 2), -1, dtype=int)
         self.visited = numpy.zeros((self.n_items, 1), dtype=bool)
+        self.seed = 0
+        self.score = 0
+        self.size = 0
 
 
     ### Calculate distance to the neighbor ###
-    def ndistance(self, item, neigh):
+    def __ndistance(self, item, neigh):
         A = self.matrix[item]
         B = self.matrix[neigh]
         BA = B - A
@@ -106,42 +52,16 @@ class NuclearCluster():
         return C
 
     ### Calculate relative position of the neighbor ###
-    def nposition(self, item, neigh):
+    def __nposition(self, item, neigh):
         A = self.matrix[item]
         B = self.matrix[neigh]
         BA = B - A
         C = (numpy.round(BA / numpy.linalg.norm(BA))).astype(int)
         
         return C
-
-
-    ### Fill neighborhood recursively ###
-    def nfill(self, x, y, item):
-        self.target[x, y] = item
-        self.coordinates[item, 0] = x
-        self.coordinates[item, 1] = y
-        self.visited[item] = True
-        
-        for n_no in range(1, self.max_neigh):
-            neigh = self.neighbors[item, n_no]
-            if neigh >= self.n_items:
-                break
-            if self.visited[neigh]:
-                continue
-
-            C = self.nposition(item, neigh)
-            Cx = C[0]
-            Cy = C[1]
-            
-            if Cx >= self.width or Cy > self.height:
-                continue
-            
-            if self.target[x + Cx, y + Cy] == -1:
-                self.nfill(x + Cx, y + Cy, neigh)
-    
     
     ### Iterative version of nfill ###
-    def nfill_s(self, x, y, item):
+    def __nfill_s(self, x, y, item):
         
         stack = collections.deque()
 
@@ -162,7 +82,7 @@ class NuclearCluster():
                 if self.visited[neigh]:
                     continue
 
-                C = self.nposition(item, neigh)
+                C = self.__nposition(item, neigh)
                 Cx = C[0]
                 Cy = C[1]
 
@@ -182,7 +102,7 @@ class NuclearCluster():
 
 
     ### Find items that have not been placed ###
-    def missing(self):
+    def __missing(self):
         list = numpy.arange(self.n_items)
         placed = numpy.empty(0, dtype=int)
         for item in range(0, self.n_items):
@@ -196,17 +116,17 @@ class NuclearCluster():
     
     
     ### Plase missing items into target matrix
-    def place(self, items):
+    def __place(self, items):
         for item in items:
-            W = self.anchor(item)
-            T = self.best_axis(W[0], W[1])
+            W = self.__anchor(item)
+            T = self.__best_axis(W[0], W[1])
             
             if T[0] != 0:
                 self.target[:, W[1]] = \
-                    self.insert(item, self.target[:, W[1]], W[0], T[0])
+                    self.__insert(item, self.target[:, W[1]], W[0], T[0])
             if T[1] != 0:
                 self.target[W[0], :] = \
-                    self.insert(item, self.target[W[0], :], W[1], T[1])
+                    self.__insert(item, self.target[W[0], :], W[1], T[1])
         
         for x in range(0, self.width):
             for y in range(0, self.height):
@@ -217,7 +137,7 @@ class NuclearCluster():
     
     
     ### Insert value into a specified position in vector
-    def insert(self, value, vector, position, shift):
+    def __insert(self, value, vector, position, shift):
         shape = vector.shape
         result = numpy.full((shape[0]), -1, dtype=int)
         start = 0
@@ -251,7 +171,7 @@ class NuclearCluster():
 
     
     ### Find a place for an item in the matrix ###
-    def anchor(self, item):
+    def __anchor(self, item):
         for n_no in range(1, maxneigh):
             neigh = neighbors[item, n_no]
             nx = self.coordinates[neigh, 0]
@@ -259,7 +179,7 @@ class NuclearCluster():
             if nx != -1 and ny != -1:
                 break;
         
-        C = self.nposition(neigh, item)
+        C = self.__nposition(neigh, item)
         Cx = C[0]
         Cy = C[1]
 
@@ -270,7 +190,7 @@ class NuclearCluster():
     
     
     ### What is the best axis to displace when placing the item ###
-    def best_axis(self, x, y):
+    def __best_axis(self, x, y):
         nx = px = x
         ny = py = y
         for nx in range(x, -1, -1):
@@ -298,7 +218,7 @@ class NuclearCluster():
     
     
     ### Compact the target matrix
-    def compact(self):
+    def __compact(self):
         minx = numpy.amin(self.coordinates[:, 0])
         miny = numpy.amin(self.coordinates[:, 1])
         maxx = numpy.amax(self.coordinates[:, 0])
@@ -319,7 +239,7 @@ class NuclearCluster():
     
     
     ### Score target matrix
-    def score(self):
+    def __score(self):
         score = 0
         for item in range(0, self.n_items):
             ix = self.coordinates[item, 0]
@@ -333,31 +253,31 @@ class NuclearCluster():
                         if neigh == -1:
                             score = score + 50
                         else:
-                            score = score + self.ndistance(item, neigh)
+                            score = score + self.__ndistance(item, neigh)
         
         return score
     
     
     ### Initiate neighborhood fill sequence ###
     def fill(self):
-        seed = numpy.random.randint(0, self.n_items)
-        self.nfill_s(int(self.width/2), int(self.height/2), seed)
-        self.place(self.missing())
+        seed = random.randrange(0, self.n_items)
+        self.__nfill_s(int(self.width/2), int(self.height/2), seed)
+        self.__place(self.__missing())
+        self.score = self.__score()
+        rmatrix = self.__compact()
+        self.size = rmatrix.shape[0] * rmatrix.shape[1]
 
 
-class ClusteringWorker(threading.Thread):
+class ClusteringWorker(multiprocessing.Process):
     
     best_score = 0
     best_size = 0
-    iterations = 0
     result = None
     result_s = None
-    iterationsLock = threading.Lock()
-    scoreLock = threading.Lock()
     
-    
-    def __init__(self, matrix, distances, neighbors, width, height, maxit, id):
-        threading.Thread.__init__(self)
+    def __init__(self, matrix, distances, neighbors, width, height,
+        maxit, id, iterator, lock, results):
+        multiprocessing.Process.__init__(self)
         self.matrix = matrix
         self.distances = distances
         self.neighbors = neighbors
@@ -365,67 +285,148 @@ class ClusteringWorker(threading.Thread):
         self.height = height
         self.maxit = maxit
         self.id = id
+        self.score = 0
+        self.size = 0
+        self.score_result = None
+        self.size_result = None
+        self.iterator = iterator
+        self.lock = lock
+        self.value = 0
+        self.results = results
         
     def run(self):
-        while ClusteringWorker.iterations < self.maxit:
-            ClusteringWorker.iterationsLock.acquire()
-            ClusteringWorker.iterations = ClusteringWorker.iterations + 1
-            ClusteringWorker.iterationsLock.release()
+        ### Some iteration variable
+        with self.lock:
+            self.value = self.iterator.value
+        while self.value < self.maxit:
+            with self.lock:
+                self.iterator.value += 1
             cluster = NuclearCluster(matrix, distances, neighbors, width, height)
             cluster.fill()
-            score = cluster.score()
-            rmatrix = cluster.compact()
-            size = rmatrix.shape[0] * rmatrix.shape[1]
-            print("Thread %i score: %f, size %i" % (self.id, score, size))
-            ClusteringWorker.scoreLock.acquire()
-            if score < ClusteringWorker.best_score or ClusteringWorker.best_score == 0:
-                ClusteringWorker.best_score = score
-                ClusteringWorker.result = cluster
-                print("New best score: %f" % (score))
-            if size < ClusteringWorker.best_size or ClusteringWorker.best_size == 0:
-                ClusteringWorker.best_size = size
-                ClusteringWorker.result_s = cluster
-                print("New best size: %i" % (size))
-            ClusteringWorker.scoreLock.release()
+            if self.score_result == None or cluster.score < self.score_result.score:
+                self.score_result = cluster
+            if self.size_result == None or cluster.size < self.size_result.size:
+                self.size_result = cluster
+            with self.lock:
+                self.value = self.iterator.value
+        
+        result = self.score_result
+        rtuple = (result.score, result.size, result.ccoords)
+        self.results.put(rtuple)
+        
+        result = self.size_result
+        rtuple = (result.score, result.size, result.ccoords)
+        self.results.put(rtuple)
 
-threads = []
 
-maxthreads = nCPUs() - 1
-if maxthreads < 1:
-    maxthreads = 1
+# Parse command line arguments
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Nuclear Segmentation with Fiji")
+    parser.add_argument('--input-csv')
+    parser.add_argument('--output-csv')
+    parser.add_argument('--width')
+    parser.add_argument('--height')
+    
+    args = parser.parse_args()
+    objectListFile = args.input_csv
+    outputFile = args.output_csv
+    width = 1024 #args.width
+    height = 1024 #args.height
+    maxneigh = 121
 
-for i in range(0, maxthreads):
-    thread = ClusteringWorker(matrix, distances, neighbors, width, height, 10, i)
-    thread.start()
-    threads.append(thread)
+    # Read objects
+    reader = csv.reader(open(objectListFile,'rU'))
+    voxels = []
+    for index, line in enumerate(reader):
+        if index > 0:
+            voxel = {}
+            voxel['coords'] = numpy.array([line[1], line[2], line[3]])
+            voxel['newcoords'] = numpy.full((1, 2), -1)
+            voxel['volume'] = line[4]
+            voxel['values'] = numpy.array([line[5], line[7]])
+            voxels.append(voxel)
 
-for t in threads:
-    t.join()
+    ncount = len(voxels)
 
-result = ClusteringWorker.result
+    # Create coordinate matrix and object list
+    matrix = numpy.empty([ncount, 2])
+    for index in range(0, ncount):
+        matrix[index] = voxels[index]['coords'][0:2:1]
 
-with open(outputFile + ".score", 'wb') as csvfile:
-    csvwriter = csv.writer(csvfile)
-    csvwriter.writerow(["Particle","cx","cy","cz","Volume",
-        "Integral 0","Mean 0","Integral 1","Mean 1"])
-    for item in range(0, result.n_items):
-         csvwriter.writerow([item + 1, result.ccoords[item, 0], \
-            result.ccoords[item, 1], 0, voxels[item]['volume'], \
-            voxels[item]['values'][0], \
-            float(voxels[item]['values'][0]) / float(voxels[item]['volume']), \
-            voxels[item]['values'][1], \
-            float(voxels[item]['values'][1]) / float(voxels[item]['volume'])])
+    # Compute distances
+    tree = scipy.spatial.cKDTree(matrix)
+    distances, neighbors = tree.query(matrix, k=maxneigh)
 
-result = ClusteringWorker.result_s
+    processes = []
 
-with open(outputFile + ".size", 'wb') as csvfile:
-    csvwriter = csv.writer(csvfile)
-    csvwriter.writerow(["Particle","cx","cy","cz","Volume",
-        "Integral 0","Mean 0","Integral 1","Mean 1"])
-    for item in range(0, result.n_items):
-         csvwriter.writerow([item + 1, result.ccoords[item, 0], \
-            result.ccoords[item, 1], 0, voxels[item]['volume'], \
-            voxels[item]['values'][0], \
-            float(voxels[item]['values'][0]) / float(voxels[item]['volume']), \
-            voxels[item]['values'][1], \
-            float(voxels[item]['values'][1]) / float(voxels[item]['volume'])])
+    maxprocs = multiprocessing.cpu_count() - 1
+    if maxprocs < 1:
+        maxprocs = 1
+
+    iterator = multiprocessing.Value('i', 0)
+    lock = multiprocessing.Lock()
+
+    results = multiprocessing.Queue()
+
+    for i in range(0, maxprocs):
+        process = ClusteringWorker(matrix, distances, neighbors,
+            width, height, 1000, i, iterator, lock, results)
+        processes.append(process)
+
+    for p in processes:
+        p.start()
+    
+    for p in processes:
+        p.join()
+        
+    rlist = []
+    while True:
+        try:
+            result = results.get_nowait()
+            rlist.append(result)
+        except Queue.Empty, e:
+            break
+        
+    best_score = 0
+    best_size = 0
+    best_score_result = None
+    best_size_result = None
+        
+    for result in rlist:
+        if result[0] < best_score or best_score == 0:
+            best_score = result[0]
+            best_score_result = result[2]
+            print("New global best score: %f" % (best_score))
+        if result[1] < best_size or best_size == 0:
+            best_size = result[1]
+            best_size_result = result[2]
+            print("New global best size: %i" % (best_size))
+
+    
+    result = best_score_result
+
+    with open(outputFile + ".score", 'wb') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow(["Particle","cx","cy","cz","Volume",
+            "Integral 0","Mean 0","Integral 1","Mean 1"])
+        for item in range(0, len(result)):
+             csvwriter.writerow([item + 1, result[item, 0], \
+                result[item, 1], 0, voxels[item]['volume'], \
+                voxels[item]['values'][0], \
+                float(voxels[item]['values'][0]) / float(voxels[item]['volume']), \
+                voxels[item]['values'][1], \
+                float(voxels[item]['values'][1]) / float(voxels[item]['volume'])])
+
+    result = best_size_result
+
+    with open(outputFile + ".size", 'wb') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow(["Particle","cx","cy","cz","Volume",
+            "Integral 0","Mean 0","Integral 1","Mean 1"])
+        for item in range(0, len(result)):
+             csvwriter.writerow([item + 1, result[item, 0], \
+                result[item, 1], 0, voxels[item]['volume'], \
+                voxels[item]['values'][0], \
+                float(voxels[item]['values'][0]) / float(voxels[item]['volume']), \
+                voxels[item]['values'][1], \
+                float(voxels[item]['values'][1]) / float(voxels[item]['volume'])])
