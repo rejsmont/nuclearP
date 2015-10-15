@@ -269,6 +269,7 @@ class NuclearCluster():
         self.score = self.__score()
         rmatrix = self.__compact()
         self.size = rmatrix.shape[0] * rmatrix.shape[1]
+        print(".", end="")
 
 
 class ClusteringWorker(multiprocessing.Process):
@@ -297,11 +298,9 @@ class ClusteringWorker(multiprocessing.Process):
         
     def run(self):
         ### Some iteration variable
-        print("Thread %i initial value" % self.id)
         while self.iterator.value < self.maxit:
             with self.iterator.get_lock():
                 self.iterator.value += 1
-            print("Thread %i currently at %i" % (self.id, self.iterator.value))
             cluster = NuclearCluster(matrix, distances, neighbors, width, height)
             cluster.fill()
             if self.score_result == None or cluster.score < self.score_result.score:
@@ -309,18 +308,14 @@ class ClusteringWorker(multiprocessing.Process):
             if self.size_result == None or cluster.size < self.size_result.size:
                 self.size_result = cluster    
         
-        print("Thread %i saving score results" % self.id)
         result = self.score_result
         rtuple = (result.score, result.size, result.ccoords)
         self.results.put(rtuple)
         
-        print("Thread %i saving size results" % self.id)
         result = self.size_result
         rtuple = (result.score, result.size, result.ccoords)
         self.results.put(rtuple)
-        
-        print("Thread %i saved results" % self.id)
-        
+                
 
 
 # Parse command line arguments
@@ -379,22 +374,14 @@ if __name__ == '__main__':
 
     for p in processes:
         p.start()
-    
-    print("Waiting for jobs to finish")
-    
+        
     rlist = []
-    for i in range(maxprocs*2):
+    for i in range(1, maxprocs*2 + 1):
         result = results.get()
         rlist.append(result)
-        print("Retrieved result %i" % i+1)
-
-    print("Result queue empty")
     
     for p in processes:
         p.join()
-
-    print("All jobs have finished")
-
     
     best_score = 0
     best_size = 0
@@ -411,7 +398,6 @@ if __name__ == '__main__':
             best_size_result = result[2]
             print("New global best size: %i" % (best_size))
 
-    
     result = best_score_result
 
     with open(outputFile + ".score", 'wb') as csvfile:
