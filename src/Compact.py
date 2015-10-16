@@ -309,12 +309,10 @@ class ClusteringWorker(multiprocessing.Process):
                 self.size_result = cluster    
         
         result = self.score_result
-        rtuple = (result.score, result.size, result.ccoords)
-        self.results.put(rtuple)
+        self.results.put(result)
         
         result = self.size_result
-        rtuple = (result.score, result.size, result.ccoords)
-        self.results.put(rtuple)
+        self.results.put(result)
                 
 
 
@@ -379,20 +377,18 @@ if __name__ == '__main__':
     for p in processes:
         p.join()
     
-    best_score = 0
-    best_size = 0
     best_score_result = None
     best_size_result = None
-        
+    
+    print()
+    
     for result in rlist:
-        if result[0] < best_score or best_score == 0:
-            best_score = result[0]
-            best_score_result = result[2]
-            print("New global best score: %f" % (best_score))
-        if result[1] < best_size or best_size == 0:
-            best_size = result[1]
-            best_size_result = result[2]
-            print("New global best size: %i" % (best_size))
+        if best_score_result == None or result.score < best_score_result.score:
+            best_score_result = result
+            print("New global best score: %f" % (best_score_result.score))
+        if best_size_result == None or result.size < best_size_result.size:
+            best_size_result = result
+            print("New global best size: %i" % (best_size_result.size))
 
     result = best_score_result
 
@@ -400,9 +396,9 @@ if __name__ == '__main__':
         csvwriter = csv.writer(csvfile)
         csvwriter.writerow(["Particle","cx","cy","cz","Volume",
             "Integral 0","Mean 0","Integral 1","Mean 1"])
-        for item in range(0, len(result)):
-             csvwriter.writerow([item + 1, result[item, 0], \
-                result[item, 1], 0, voxels[item]['volume'], \
+        for item in range(0, len(result.ccoords)):
+             csvwriter.writerow([item + 1, result.ccoords[item, 0], \
+                result.ccoords[item, 1], 0, voxels[item]['volume'], \
                 voxels[item]['values'][0], \
                 float(voxels[item]['values'][0]) / float(voxels[item]['volume']), \
                 voxels[item]['values'][1], \
@@ -414,9 +410,9 @@ if __name__ == '__main__':
         csvwriter = csv.writer(csvfile)
         csvwriter.writerow(["Particle","cx","cy","cz","Volume",
             "Integral 0","Mean 0","Integral 1","Mean 1"])
-        for item in range(0, len(result)):
-             csvwriter.writerow([item + 1, result[item, 0], \
-                result[item, 1], 0, voxels[item]['volume'], \
+        for item in range(0, len(result.ccoords)):
+             csvwriter.writerow([item + 1, result.ccoords[item, 0], \
+                result.ccoords[item, 1], 0, voxels[item]['volume'], \
                 voxels[item]['values'][0], \
                 float(voxels[item]['values'][0]) / float(voxels[item]['volume']), \
                 voxels[item]['values'][1], \
