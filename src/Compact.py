@@ -329,6 +329,7 @@ if __name__ == '__main__':
     parser.add_argument('--width')
     parser.add_argument('--height')
     parser.add_argument('--fifo')
+    parser.add_argument('--iterations')
     
     args = parser.parse_args()
 
@@ -336,6 +337,11 @@ if __name__ == '__main__':
         fifo = True
     else:
         fifo = False
+        
+    if args.iterations:
+        iterations = args.iterations
+    else:
+        iterations = 10
                         
     objectListFile = args.input_csv
     outputFile = args.output_csv
@@ -375,7 +381,7 @@ if __name__ == '__main__':
 
     for i in range(0, maxprocs):
         process = ClusteringWorker(matrix, distances, neighbors,
-            width, height, 20, i, iterator, results, fifo)
+            width, height, iterations, i, iterator, results, fifo)
         processes.append(process)
 
     for p in processes:
