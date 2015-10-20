@@ -24,7 +24,7 @@ import Queue
 class NuclearCluster():
     
     ### Init data structures ###
-    def __init__(self, matrix, distances, neighbors, width, height):
+    def __init__(self, matrix, distances, neighbors, width, height, fifo):
         self.matrix = matrix
         self.distances = distances
         self.neighbors = neighbors
@@ -40,6 +40,7 @@ class NuclearCluster():
         self.seed = 0
         self.score = 0
         self.size = 0
+        self.fifo = fifo
 
 
     ### Calculate distance to the neighbor ###
@@ -73,7 +74,10 @@ class NuclearCluster():
         stack.append(value)
         
         while stack:
-            (x, y, item) = stack.pop()
+            if self.fifo:
+                (x, y, item) = stack.pop()
+            else:
+                (x, y, item) = stack.popleft()
             
             for n_no in range(1, self.max_neigh):
                 neigh = self.neighbors[item, n_no]
@@ -280,7 +284,7 @@ class ClusteringWorker(multiprocessing.Process):
     result_s = None
     
     def __init__(self, matrix, distances, neighbors, width, height,
-        maxit, id, iterator, results):
+        maxit, id, iterator, results, fifo):
         multiprocessing.Process.__init__(self)
         self.matrix = matrix
         self.distances = distances
@@ -295,13 +299,14 @@ class ClusteringWorker(multiprocessing.Process):
         self.size_result = None
         self.iterator = iterator
         self.results = results
+        self.fifo = fifo
         
     def run(self):
         ### Some iteration variable
         while self.iterator.value < self.maxit:
             with self.iterator.get_lock():
                 self.iterator.value += 1
-            cluster = NuclearCluster(matrix, distances, neighbors, width, height)
+            cluster = NuclearCluster(matrix, distances, neighbors, width, height, fifo)
             cluster.fill()
             if self.score_result == None or cluster.score < self.score_result.score:
                 self.score_result = cluster
@@ -323,8 +328,15 @@ if __name__ == '__main__':
     parser.add_argument('--output-csv')
     parser.add_argument('--width')
     parser.add_argument('--height')
+    parser.add_argument('--fifo')
     
     args = parser.parse_args()
+
+    if args.fifo and str(args.fifo).upper() == "TRUE":
+        fifo = True
+    else:
+        fifo = False
+                        
     objectListFile = args.input_csv
     outputFile = args.output_csv
     width = 1024 #args.width
@@ -363,7 +375,7 @@ if __name__ == '__main__':
 
     for i in range(0, maxprocs):
         process = ClusteringWorker(matrix, distances, neighbors,
-            width, height, 20, i, iterator, results)
+            width, height, 20, i, iterator, results, fifo)
         processes.append(process)
 
     for p in processes:
